@@ -195,3 +195,24 @@ describe("SessionClient", () => {
     expect(ipc.calls.length).toBe(0);
   });
 });
+
+describe("manual language flag in the session", () => {
+  it("is saved and restored", async () => {
+    const m = new DocumentManager();
+    const d = m.newDoc();
+    m.setText(d.id, "x");
+    m.setLanguage(d.id, "Python", true);
+    expect(buildSnapshot(m).tabs[0]).toMatchObject({ language: "Python", languageManual: true });
+    const ipc = createMockIpc({ load_session: () => ({ tabs: [{ ...buildSnapshot(m).tabs[0] }], activeId: null, recentlyClosed: [] }) });
+    const r = new DocumentManager();
+    await restoreSession(r, ipc);
+    expect(r.docs[0]).toMatchObject({ language: "Python", languageManual: true });
+  });
+
+  it("defaults to false for sessions saved before the flag existed", async () => {
+    const ipc = createMockIpc({ load_session: () => ({ tabs: [{ id: "doc-1", title: "new 1", path: null, encoding: "UTF-8", bom: false, eol: "lf", language: "JSON", dirty: true, text: "{}" }], activeId: null, recentlyClosed: [] }) });
+    const r = new DocumentManager();
+    await restoreSession(r, ipc);
+    expect(r.docs[0].languageManual).toBe(false);
+  });
+});

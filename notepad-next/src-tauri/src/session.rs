@@ -26,6 +26,9 @@ pub struct TabSnapshot {
     pub bom: bool,
     pub eol: Eol,
     pub language: String,
+    /// True once the user picked the language from the menu; auto-detection must not override it.
+    #[serde(default)]
+    pub language_manual: bool,
     pub dirty: bool,
     pub text: Option<String>,
 }
@@ -58,6 +61,8 @@ struct TabMeta {
     bom: bool,
     eol: Eol,
     language: String,
+    #[serde(default)]
+    language_manual: bool,
     dirty: bool,
 }
 
@@ -99,6 +104,7 @@ fn split(tab: &TabSnapshot, key: String) -> (StoredTab, Option<(String, &str)>) 
         bom: tab.bom,
         eol: tab.eol,
         language: tab.language.clone(),
+        language_manual: tab.language_manual,
         dirty: tab.dirty,
     };
     match &tab.text {
@@ -173,6 +179,7 @@ fn hydrate(dir: &Path, stored: StoredTab) -> Option<TabSnapshot> {
         bom: m.bom,
         eol: m.eol,
         language: m.language,
+        language_manual: m.language_manual,
         dirty: m.dirty,
         text,
     })
@@ -226,6 +233,7 @@ mod tests {
             bom: false,
             eol: Eol::Lf,
             language: "Normal text".to_string(),
+            language_manual: false,
             dirty: text.is_some(),
             text: text.map(str::to_string),
         }
@@ -280,6 +288,31 @@ mod tests {
         let s = SessionSnapshot { tabs: vec![a, b], active_id: Some("doc-2".into()), recently_closed: vec![] };
         save(dir.path(), &s).unwrap();
         assert_eq!(load(dir.path()), s);
+    }
+
+    #[test]
+    fn the_manual_language_flag_roundtrips() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut t = tab("doc-1", Some("x"));
+        t.language = "Python".to_string();
+        t.language_manual = true;
+        save(dir.path(), &snap(vec![t.clone()])).unwrap();
+        assert_eq!(load(dir.path()).tabs[0], t);
+    }
+
+    #[test]
+    fn sessions_written_before_the_flag_existed_still_load() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join("session.json"),
+            r#"{"version":1,"tabs":[{"id":"doc-1","title":"new 1","path":null,"encoding":"UTF-8","bom":false,"eol":"lf","language":"JSON","dirty":false,"contentKey":null}],"activeId":null}"#,
+        )
+        .unwrap();
+        // Parsing must neither fail nor quarantine the file; the missing flag defaults to false.
+        let loaded = load(dir.path());
+        assert!(dir.path().join("session.json").exists());
+        assert_eq!(loaded.tabs.len(), 1);
+        assert_eq!((loaded.tabs[0].language.as_str(), loaded.tabs[0].language_manual), ("JSON", false));
     }
 
     #[test]

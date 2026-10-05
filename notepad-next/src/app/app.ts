@@ -6,7 +6,8 @@ import { isolateHistory } from "@codemirror/commands";
 import { createEditorState } from "../editor/createEditor";
 import { marksExtension } from "../editor/marks";
 import { exceedsLargeFileLimit } from "../files/limits";
-import { PLAIN_TEXT, detectLanguage, loadLanguageExtension } from "../lang/languages";
+import { detectFromContent } from "../lang/detect";
+import { PLAIN_TEXT, detectLanguage, hasRecognisedExtension, loadLanguageExtension } from "../lang/languages";
 import { DocumentManager, type LoadedFile } from "../docs/documentManager";
 import type { Ipc } from "../ipc";
 import { renderStatusBar } from "../statusbar";
@@ -27,6 +28,8 @@ export interface AppDeps {
   onQuit?: () => Promise<void>;
   /** Transient user-visible messages (toast). */
   notify?: (message: string, kind: "info" | "error") => void;
+  /** Delay before content-based language detection runs after an edit (ms). */
+  detectDelayMs?: number;
 }
 
 /**
@@ -81,6 +84,7 @@ export class App {
     const active = this.manager.active;
     if (active && active.id !== this.shownId) this.show(active.id, active.text);
     if (active) void this.syncLanguage(active.id, active.language);
+    this.scheduleDetection();
     // The line-ending marker text follows the tab's EOL, so refresh it when that changes.
     if (active && this.appliedEol.get(active.id) !== active.eol) {
       this.appliedEol.set(active.id, active.eol);
@@ -191,8 +195,38 @@ export class App {
     if (this.manager.activeId) this.manager.setEncoding(this.manager.activeId, encoding, bom);
   }
 
+  /** The user picked a language from the menu: it sticks and is never overridden by detection. */
   setLanguage(language: string): void {
-    if (this.manager.activeId) this.manager.setLanguage(this.manager.activeId, language);
+    if (this.manager.activeId) this.manager.setLanguage(this.manager.activeId, language, true);
+  }
+
+  private detectTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Untitled / unknown-extension tabs that are still plain text and were not set by the user. */
+  private canAutoDetect(doc: { language: string; languageManual: boolean; path: string | null }): boolean {
+    return doc.language === PLAIN_TEXT && !doc.languageManual && !hasRecognisedExtension(doc.path);
+  }
+
+  /** Detect the active tab's language from its content now; returns the language set, or null if nothing fits. */
+  detectLanguageNow(): string | null {
+    const doc = this.manager.active;
+    if (!doc) return null;
+    const lang = detectFromContent(doc.text);
+    if (lang) this.manager.setLanguage(doc.id, lang);
+    return lang;
+  }
+
+  private scheduleDetection(): void {
+    if (this.detectTimer) clearTimeout(this.detectTimer);
+    this.detectTimer = null;
+    const doc = this.manager.active;
+    if (!doc || doc.text === "" || !this.canAutoDetect(doc)) return;
+    this.detectTimer = setTimeout(() => {
+      this.detectTimer = null;
+      const d = this.manager.active;
+      // Re-check: the tab may have changed, been closed or been set manually during the delay.
+      if (d && this.canAutoDetect(d)) this.detectLanguageNow();
+    }, this.deps.detectDelayMs ?? 300);
   }
 
   async openFolder(): Promise<string | null> {
@@ -268,7 +302,7 @@ export class App {
     }
     this.manager.markSaved(id, path);
     // A tab saved under a new name picks up that name's language unless the user chose one.
-    if (doc.language === PLAIN_TEXT) this.manager.setLanguage(id, detectLanguage(path));
+    if (doc.language === PLAIN_TEXT && !doc.languageManual) this.manager.setLanguage(id, detectLanguage(path));
     return true;
   }
 

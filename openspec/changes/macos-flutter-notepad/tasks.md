@@ -128,9 +128,9 @@
 
 ## 16. Language detection (spec: language-detection)
 
-- [ ] 16.1 Write tests for content detection (JSON, XML, HTML, YAML, Java, prose, empty, bounded prefix), then implement
-- [ ] 16.2 Auto-apply to untitled / Normal-text documents after typing or pasting; never override a manual choice or a file extension
-- [ ] 16.3 Persist the "language chosen manually" flag in the session
+- [x] 16.1 Write tests for content detection (JSON, XML, HTML, YAML, Java, prose, empty, bounded prefix), then implement
+- [x] 16.2 Auto-apply to untitled / Normal-text documents after typing or pasting; never override a manual choice or a file extension
+- [x] 16.3 Persist the "language chosen manually" flag in the session
 
 ## 17. Code formatting and JSON extras (specs: code-formatting, json-tools)
 

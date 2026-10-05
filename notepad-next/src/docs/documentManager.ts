@@ -13,6 +13,8 @@ export interface Doc {
   encoding: string;
   bom: boolean;
   language: string;
+  /** True once the user chose the language from the menu; auto-detection never overrides it. */
+  languageManual: boolean;
   /** Set when eol/encoding changed since the last save, which also makes the doc dirty. */
   metaDirty: boolean;
   /** True when a restored tab's file no longer exists on disk. */
@@ -29,6 +31,7 @@ export interface RestoredDoc {
   encoding: string;
   bom: boolean;
   language: string;
+  languageManual: boolean;
   metaDirty: boolean;
   missing: boolean;
 }
@@ -116,6 +119,7 @@ export class DocumentManager {
       encoding: "UTF-8",
       bom: false,
       language: "Normal text",
+      languageManual: false,
       metaDirty: false,
       missing: false,
     };
@@ -203,10 +207,12 @@ export class DocumentManager {
     this.emit();
   }
 
-  setLanguage(id: string, language: string): void {
+  /** `manual` marks a choice made by the user, which auto-detection must never override. */
+  setLanguage(id: string, language: string, manual = false): void {
     const doc = this.get(id);
-    if (!doc || doc.language === language) return;
+    if (!doc || (doc.language === language && (doc.languageManual || !manual))) return;
     doc.language = language;
+    if (manual) doc.languageManual = true;
     this.emit();
   }
 

@@ -49,6 +49,14 @@ export function detectLanguage(path: string | null): string {
   return BY_EXTENSION.get(file.slice(dot + 1).toLowerCase()) ?? PLAIN_TEXT;
 }
 
+/** True when the file name's extension is one of the registered ones (even for plain text such as .txt). */
+export function hasRecognisedExtension(path: string | null): boolean {
+  if (!path) return false;
+  const file = path.split(/[\\/]/).pop() ?? "";
+  const dot = file.lastIndexOf(".");
+  return dot > 0 && BY_EXTENSION.has(file.slice(dot + 1).toLowerCase());
+}
+
 const cache = new Map<string, Promise<Extension>>();
 
 /** Highlighting extension for a language name (cached); unknown names fall back to plain text. */

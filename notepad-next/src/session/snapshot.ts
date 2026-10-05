@@ -11,6 +11,7 @@ export interface TabSnapshot {
   bom: boolean;
   eol: Eol;
   language: string;
+  languageManual?: boolean;
   dirty: boolean;
   /** Present for untitled and dirty tabs; null for clean saved tabs (reloaded from disk). */
   text: string | null;
@@ -31,6 +32,7 @@ function tabSnapshot(d: Doc): TabSnapshot {
     bom: d.bom,
     eol: d.eol,
     language: d.language,
+    languageManual: d.languageManual,
     dirty: d.dirty,
     text: d.dirty || d.path === null ? d.text : null,
   };
@@ -95,6 +97,7 @@ export async function restoreSession(mgr: DocumentManager, ipc: Ipc): Promise<bo
       encoding: tab.encoding,
       bom: tab.bom,
       language: tab.language,
+      languageManual: tab.languageManual ?? false,
       // A tab that was dirty only because of an EOL/encoding change has no text difference to show.
       metaDirty: tab.dirty && text === savedText,
       missing: tab.path !== null && disk === null,

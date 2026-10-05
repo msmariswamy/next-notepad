@@ -363,3 +363,131 @@ describe("large file warning", () => {
     expect(platform.confirm).not.toHaveBeenCalled();
   });
 });
+
+describe("content-based language detection", () => {
+  const build2 = (delay = 0) => {
+    document.body.innerHTML = '<div id="tabs"></div><div id="editor"></div><div id="status"></div>';
+    app = new App({
+      editorParent: document.getElementById("editor")!,
+      tabsEl: document.getElementById("tabs")!,
+      statusEl: document.getElementById("status")!,
+      manager: new DocumentManager(),
+      platform,
+      ipc,
+      settings: { get: () => settings, subscribe: () => () => {} },
+      detectDelayMs: delay,
+    });
+    app.start();
+  };
+  const settle = () => new Promise((r) => setTimeout(r, 20));
+  const insert = (t: string) => app.view.dispatch({ changes: { from: 0, to: app.view.state.doc.length, insert: t } });
+
+  it("sets JSON for pasted JSON in an untitled tab", async () => {
+    build2();
+    insert('{"a": [1, 2]}');
+    await settle();
+    expect(app.manager.active!.language).toBe("JSON");
+    await app.languageReady();
+    expect(app.view.state.facet(language)?.name).toBe("json");
+    expect(app.manager.active!.languageManual).toBe(false);
+  });
+
+  it.each([
+    ['<?xml version="1.0"?><root><a/></root>', "XML"],
+    ["<!DOCTYPE html><html><body></body></html>", "HTML"],
+    ["name: app\nitems:\n  - a\n  - b", "YAML"],
+    ["package a;\n\npublic class Foo {\n  public static void main(String[] args) {}\n}", "Java"],
+  ])("detects %#", async (text, lang) => {
+    build2();
+    insert(text);
+    await settle();
+    expect(app.manager.active!.language).toBe(lang);
+  });
+
+  it("leaves ordinary prose as plain text", async () => {
+    build2();
+    insert("Meeting notes: call John tomorrow.");
+    await settle();
+    expect(app.manager.active!.language).toBe("Normal text");
+  });
+
+  it("never overrides a language the user chose", async () => {
+    build2();
+    app.setLanguage("Python");
+    insert('{"a": 1}');
+    await settle();
+    expect(app.manager.active!.language).toBe("Python");
+    expect(app.manager.active!.languageManual).toBe(true);
+  });
+
+  it("lets a file extension win over the content", async () => {
+    build2();
+    ipc = createMockIpc({ open_file: () => ({ text: '{"a":1}', encoding: "UTF-8", bom: false, eol: "lf" }), file_size: () => 10 });
+    app = new App({
+      editorParent: document.getElementById("editor")!,
+      tabsEl: document.getElementById("tabs")!,
+      statusEl: document.getElementById("status")!,
+      manager: new DocumentManager(),
+      platform,
+      ipc,
+      settings: { get: () => settings, subscribe: () => () => {} },
+      detectDelayMs: 0,
+    });
+    app.start();
+    await app.openPath("/tmp/notes.txt");
+    await settle();
+    expect(app.manager.active!.language).toBe("Normal text");
+  });
+
+  it("detects content for a file with an unrecognised extension", async () => {
+    build2();
+    ipc = createMockIpc({ open_file: () => ({ text: '{"a":1}', encoding: "UTF-8", bom: false, eol: "lf" }), file_size: () => 10 });
+    app = new App({
+      editorParent: document.getElementById("editor")!,
+      tabsEl: document.getElementById("tabs")!,
+      statusEl: document.getElementById("status")!,
+      manager: new DocumentManager(),
+      platform,
+      ipc,
+      settings: { get: () => settings, subscribe: () => () => {} },
+      detectDelayMs: 0,
+    });
+    app.start();
+    await app.openPath("/tmp/data.weird");
+    await settle();
+    expect(app.manager.active!.language).toBe("JSON");
+  });
+
+  it("waits for the debounce delay and cancels on further typing", async () => {
+    vi.useFakeTimers();
+    build2(300);
+    insert('{"a": 1}');
+    await vi.advanceTimersByTimeAsync(200);
+    expect(app.manager.active!.language).toBe("Normal text");
+    insert('{"a": 12}');
+    await vi.advanceTimersByTimeAsync(200);
+    expect(app.manager.active!.language).toBe("Normal text");
+    await vi.advanceTimersByTimeAsync(200);
+    expect(app.manager.active!.language).toBe("JSON");
+    vi.useRealTimers();
+  });
+
+  it("does not re-run detection once a language is set", async () => {
+    build2();
+    insert('{"a": 1}');
+    await settle();
+    expect(app.manager.active!.language).toBe("JSON");
+    insert("name: app\nitems:\n  - a");
+    await settle();
+    expect(app.manager.active!.language).toBe("JSON");
+  });
+
+  it("detectLanguageNow reports what it set, or null", () => {
+    build2(10_000);
+    insert('<config><item/></config>');
+    expect(app.detectLanguageNow()).toBe("XML");
+    insert("just words");
+    app.setLanguage("Normal text"); // manual plain text
+    expect(app.detectLanguageNow()).toBeNull();
+  });
+});
