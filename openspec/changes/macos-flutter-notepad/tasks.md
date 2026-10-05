@@ -10,10 +10,10 @@
 
 ## 2. Editor core (spec: editor-core)
 
-- [ ] 2.1 Write tests for open/save/save-as commands in Rust (read, write, atomic save), then implement them
-- [ ] 2.2 Write tests for encoding and EOL detection (UTF-8, UTF-8 BOM, UTF-16, CRLF/LF), then implement with `encoding_rs`
-- [ ] 2.3 Embed CodeMirror 6 with line numbers, multi-cursor, rectangular selection and code folding
-- [ ] 2.4 Implement the status bar (Ln/Col, selection, length, lines, EOL, encoding, language) with tests for its formatting logic
+- [x] 2.1 Write tests for open/save/save-as commands in Rust (read, write, atomic save), then implement them
+- [x] 2.2 Write tests for encoding and EOL detection (UTF-8, UTF-8 BOM, UTF-16, CRLF/LF), then implement with `encoding_rs`
+- [x] 2.3 Embed CodeMirror 6 with line numbers, multi-cursor, rectangular selection and code folding
+- [x] 2.4 Implement the status bar (Ln/Col, selection, length, lines, EOL, encoding, language) with tests for its formatting logic
 - [ ] 2.5 Implement EOL conversion and encoding display; round-trip save keeps encoding and EOL
 - [ ] 2.6 Implement large-file warning (default 50 MB) with a test for the threshold check
 - [ ] 2.7 Build the menu bar (File, Edit, Search, View, Encoding, Language, Settings) with native shortcuts per platform

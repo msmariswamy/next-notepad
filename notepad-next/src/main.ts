@@ -1,22 +1,17 @@
-import { invoke } from "@tauri-apps/api/core";
+import { EditorView } from "@codemirror/view";
+import { createEditor } from "./editor/createEditor";
+import { renderStatusBar, type DocMeta } from "./statusbar";
 
-let greetInputEl: HTMLInputElement | null;
-let greetMsgEl: HTMLElement | null;
+const meta: DocMeta = { eol: "lf", encoding: "UTF-8", language: "Normal text" };
+const statusEl = document.getElementById("statusbar")!;
 
-async function greet() {
-  if (greetMsgEl && greetInputEl) {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    greetMsgEl.textContent = await invoke("greet", {
-      name: greetInputEl.value,
-    });
-  }
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  greetInputEl = document.querySelector("#greet-input");
-  greetMsgEl = document.querySelector("#greet-msg");
-  document.querySelector("#greet-form")?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    greet();
-  });
+const view = createEditor({
+  parent: document.getElementById("editor")!,
+  extensions: [
+    EditorView.updateListener.of((u) => {
+      if (u.docChanged || u.selectionSet) renderStatusBar(statusEl, u.view, meta);
+    }),
+  ],
 });
+renderStatusBar(statusEl, view, meta);
+view.focus();
