@@ -63,4 +63,9 @@ If a restored tab's file no longer exists on disk, the system SHALL still restor
 #### Scenario: File deleted between sessions
 - **GIVEN** a dirty tab bound to a file that was deleted
 - **WHEN** the app launches
-- **THEN** the tab opens with its stored text and indicates the file is missing
+- **THEN** the tab opens with its stored text, shows a warning marker with a tooltip naming the missing path, and the status bar says the file was not found
+
+#### Scenario: Saving clears the missing marker
+- **GIVEN** a restored tab marked as missing
+- **WHEN** the user saves it
+- **THEN** the marker and the status-bar note disappear

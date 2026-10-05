@@ -39,4 +39,9 @@ describe("status bar", () => {
     expect(segs[0]).toBe("JSON");
     expect(segs[4]).toBe("UTF-8");
   });
+
+  it("adds a warning to the language segment when the file is missing", () => {
+    expect(formatStatus({ ...base, missing: true })[0]).toBe("JSON   ⚠ File not found on disk");
+    expect(formatStatus({ ...base, missing: false })[0]).toBe("JSON");
+  });
 });

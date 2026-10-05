@@ -12,6 +12,8 @@ export interface StatusInfo {
   eol: Eol;
   encoding: string;
   language: string;
+  /** The tab's file no longer exists on disk (restored from a session). */
+  missing?: boolean;
 }
 
 const EOL_LABEL: Record<Eol, string> = { lf: "Unix (LF)", crlf: "Windows (CR LF)", cr: "Mac (CR)" };
@@ -24,7 +26,7 @@ export function eolLabel(eol: Eol): string {
 export function formatStatus(s: StatusInfo): string[] {
   const sel = s.selectionLength > 0 ? `Sel: ${s.selectionLength} | ${s.selectionLines}` : "Sel: 0 | 0";
   return [
-    s.language,
+    s.missing ? `${s.language}   ⚠ File not found on disk` : s.language,
     `length: ${s.length}   lines: ${s.lines}`,
     `Ln: ${s.line}   Col: ${s.column}   ${sel}`,
     eolLabel(s.eol),

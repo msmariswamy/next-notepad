@@ -225,6 +225,7 @@ export class DocumentManager {
     }
     doc.savedText = doc.text;
     doc.metaDirty = false;
+    doc.missing = false; // the file exists again now that it has been written
     this.refreshDirty(doc);
     this.emit();
   }

@@ -22,6 +22,11 @@ The system SHALL let the user choose a language for the current document from th
 ### Requirement: JSON highlighting
 The system SHALL highlight JSON keys, strings, numbers, booleans, null and punctuation distinctly, and mark syntax errors.
 
+#### Scenario: Syntax error is marked
+- **GIVEN** a JSON document `{"a": 1 "b": 2}`
+- **WHEN** the language is JSON
+- **THEN** the position of the first syntax error is underlined and the mark disappears once the JSON is valid
+
 #### Scenario: Distinct token styles
 - **GIVEN** `{"name": "x", "n": 1, "ok": true}`
 - **THEN** keys, strings, numbers and booleans render with different styles

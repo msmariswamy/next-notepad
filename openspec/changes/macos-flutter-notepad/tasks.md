@@ -139,3 +139,11 @@
 - [x] 17.3 Format Document command (Edit > Format, Cmd/Ctrl+Alt+L) with auto-detect fallback and one undo step
 - [x] 17.4 JSON extras: Pretty-print 2 spaces / 4 spaces / tabs, Sort Keys, Escape / Unescape string; JSON commands set the language to JSON for valid JSON
 - [x] 17.5 End-to-end tests for each language formatter and the JSON menu
+
+## 18. Verification follow-ups (from /opsx:verify)
+
+- [x] 18.1 Show a missing-file indicator for restored tabs whose file no longer exists (tab warning + tooltip, status-bar note, cleared on save), with unit and end-to-end tests (spec: session-restore)
+- [ ] 18.2 Mark JSON syntax errors in the editor at the validator's error position, debounced and size-guarded, with unit and end-to-end tests (spec: syntax-highlighting)
+- [ ] 18.3 Update design D11 for the Playwright WebKit end-to-end approach and record the deviation from ADR-0001's confirmation in a new ADR-0004
+- [ ] 18.4 Fix the `cargo clippy` warning
+- [ ] 18.5 Add a manual verification checklist to `verification.md` for scenarios that cannot be automated in the browser harness

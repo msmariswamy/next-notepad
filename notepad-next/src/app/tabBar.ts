@@ -13,15 +13,15 @@ export function renderTabBar(el: HTMLElement, mgr: DocumentManager, h: TabBarHan
   el.setAttribute("role", "tablist");
   mgr.docs.forEach((doc, index) => {
     const tab = document.createElement("div");
-    tab.className = "tab" + (doc.id === mgr.activeId ? " active" : "") + (doc.dirty ? " dirty" : "");
+    tab.className = "tab" + (doc.id === mgr.activeId ? " active" : "") + (doc.dirty ? " dirty" : "") + (doc.missing ? " missing" : "");
     tab.setAttribute("role", "tab");
     tab.dataset.id = doc.id;
     tab.draggable = true;
 
     const label = document.createElement("span");
     label.className = "tab-title";
-    label.textContent = (doc.dirty ? "● " : "") + doc.title;
-    label.title = doc.path ?? doc.title;
+    label.textContent = (doc.missing ? "⚠ " : "") + (doc.dirty ? "● " : "") + doc.title;
+    label.title = doc.missing ? `File not found on disk: ${doc.path}` : (doc.path ?? doc.title);
 
     const close = document.createElement("button");
     close.className = "tab-close";

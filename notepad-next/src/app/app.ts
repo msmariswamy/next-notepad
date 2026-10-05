@@ -134,7 +134,7 @@ export class App {
   private renderStatus(): void {
     const doc = this.manager.active;
     if (!doc) return;
-    renderStatusBar(this.deps.statusEl, this.view, { eol: doc.eol, encoding: doc.encoding, language: doc.language });
+    renderStatusBar(this.deps.statusEl, this.view, { eol: doc.eol, encoding: doc.encoding, language: doc.language, missing: doc.missing });
   }
 
   getSelection(): { from: number; to: number } {

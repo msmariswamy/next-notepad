@@ -5,6 +5,7 @@ export interface DocMeta {
   eol: Eol;
   encoding: string;
   language: string;
+  missing?: boolean;
 }
 
 /** Derive status info from editor state; kept pure so it can be unit tested. */

@@ -138,6 +138,15 @@ describe("dirty tracking", () => {
   });
 });
 
+describe("missing files", () => {
+  it("saving a restored missing tab clears the missing flag", () => {
+    const d = m.restoreDoc({ id: "doc-3", title: "gone.txt", path: "/gone.txt", text: "x", savedText: "", eol: "lf", encoding: "UTF-8", bom: false, language: "Normal text", languageManual: false, metaDirty: false, missing: true });
+    expect(m.get(d.id)!.missing).toBe(true);
+    m.markSaved(d.id);
+    expect(m.get(d.id)!.missing).toBe(false);
+  });
+});
+
 describe("close policy", () => {
   it("closes a clean tab with no prompt", () => {
     const d = m.newDoc();

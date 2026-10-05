@@ -52,4 +52,21 @@ describe("tab bar", () => {
     (el.querySelector(".tab-new") as HTMLElement).click();
     expect(h.onNew).toHaveBeenCalled();
   });
+
+  it("marks a tab whose file is missing with a warning and a tooltip naming the path", () => {
+    const d = mgr.restoreDoc({ id: "doc-9", title: "gone.txt", path: "/x/gone.txt", text: "mine", savedText: "", eol: "lf", encoding: "UTF-8", bom: false, language: "Normal text", languageManual: false, metaDirty: false, missing: true });
+    renderTabBar(el, mgr, h);
+    const tab = el.querySelector(`.tab[data-id="${d.id}"]`)!;
+    expect(tab.classList.contains("missing")).toBe(true);
+    const title = tab.querySelector(".tab-title") as HTMLElement;
+    expect(title.textContent).toContain("⚠");
+    expect(title.title).toBe("File not found on disk: /x/gone.txt");
+  });
+
+  it("shows no warning for an ordinary tab", () => {
+    mgr.newDoc();
+    renderTabBar(el, mgr, h);
+    expect(el.querySelector(".tab.missing")).toBeNull();
+    expect(el.querySelector(".tab-title")!.textContent).not.toContain("⚠");
+  });
 });
