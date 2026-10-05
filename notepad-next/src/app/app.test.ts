@@ -1,0 +1,146 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createMockIpc, type MockIpc } from "../ipc";
+import { DocumentManager } from "../docs/documentManager";
+import { App } from "./app";
+import type { Platform } from "./platform";
+
+let ipc: MockIpc;
+let platform: Platform;
+let settings: { silentClose: boolean };
+let app: App;
+
+function build() {
+  document.body.innerHTML = '<div id="tabs"></div><div id="editor"></div><div id="status"></div>';
+  app = new App({
+    editorParent: document.getElementById("editor")!,
+    tabsEl: document.getElementById("tabs")!,
+    statusEl: document.getElementById("status")!,
+    manager: new DocumentManager(),
+    platform,
+    ipc,
+    settings,
+  });
+  app.start();
+}
+
+const type = (text: string) => app.view.dispatch({ changes: { from: app.view.state.doc.length, insert: text } });
+
+beforeEach(() => {
+  ipc = createMockIpc({
+    save_file_cmd: () => undefined,
+    open_file: () => ({ text: "from disk", encoding: "UTF-8", bom: false, eol: "lf" }),
+  });
+  platform = {
+    pickOpenPath: vi.fn(async () => "/tmp/opened.txt"),
+    pickSavePath: vi.fn(async () => "/tmp/saved.txt"),
+    confirmUnsaved: vi.fn(async () => "cancel" as const),
+  };
+  settings = { silentClose: false };
+  build();
+});
+
+describe("app", () => {
+  it("starts with one untitled tab", () => {
+    expect(app.manager.docs.map((d) => d.title)).toEqual(["new 1"]);
+  });
+
+  it("marks the tab dirty when typing", () => {
+    type("hi");
+    expect(app.manager.active!.dirty).toBe(true);
+  });
+
+  it("keeps each tab's text when switching", () => {
+    type("first");
+    app.newTab();
+    type("second");
+    app.activateTab(app.manager.docs[0].id);
+    expect(app.view.state.doc.toString()).toBe("first");
+    app.activateTab(app.manager.docs[1].id);
+    expect(app.view.state.doc.toString()).toBe("second");
+  });
+
+  it("opens a file into a new tab", async () => {
+    await app.openFileDialog();
+    expect(ipc.calls.find((c) => c.command === "open_file")?.args).toEqual({ path: "/tmp/opened.txt" });
+    expect(app.manager.active!.title).toBe("opened.txt");
+    expect(app.view.state.doc.toString()).toBe("from disk");
+  });
+
+  it("saves an untitled tab through a save dialog and clears dirty", async () => {
+    type("note");
+    await app.save();
+    expect(platform.pickSavePath).toHaveBeenCalled();
+    expect(ipc.calls.find((c) => c.command === "save_file_cmd")?.args).toMatchObject({
+      path: "/tmp/saved.txt",
+      text: "note",
+      encoding: "UTF-8",
+      eol: "lf",
+    });
+    expect(app.manager.active!.dirty).toBe(false);
+    expect(app.manager.active!.title).toBe("saved.txt");
+  });
+
+  it("saves a bound tab without asking for a path", async () => {
+    await app.openFileDialog();
+    type("!");
+    await app.save();
+    expect(platform.pickSavePath).not.toHaveBeenCalled();
+    expect(app.manager.active!.dirty).toBe(false);
+  });
+
+  it("keeps the tab dirty when the save dialog is cancelled", async () => {
+    platform.pickSavePath = vi.fn(async () => null);
+    type("note");
+    await app.save();
+    expect(app.manager.active!.dirty).toBe(true);
+  });
+});
+
+describe("closing tabs", () => {
+  it("closes a clean tab without a prompt and always leaves one tab", async () => {
+    await app.closeTab(app.manager.docs[0].id);
+    expect(platform.confirmUnsaved).not.toHaveBeenCalled();
+    expect(app.manager.docs.length).toBe(1);
+  });
+
+  it("prompts for a dirty tab and keeps it when cancelled", async () => {
+    type("x");
+    await app.closeTab(app.manager.docs[0].id);
+    expect(platform.confirmUnsaved).toHaveBeenCalledWith("new 1");
+    expect(app.manager.docs[0].text).toBe("x");
+  });
+
+  it("discards a dirty tab on Don't Save", async () => {
+    platform.confirmUnsaved = vi.fn(async () => "discard" as const);
+    type("x");
+    const id = app.manager.docs[0].id;
+    await app.closeTab(id);
+    expect(app.manager.get(id)).toBeUndefined();
+  });
+
+  it("saves then closes on Save", async () => {
+    platform.confirmUnsaved = vi.fn(async () => "save" as const);
+    type("x");
+    const id = app.manager.docs[0].id;
+    await app.closeTab(id);
+    expect(ipc.calls.some((c) => c.command === "save_file_cmd")).toBe(true);
+    expect(app.manager.get(id)).toBeUndefined();
+  });
+
+  it("keeps the tab if Save is chosen but the save dialog is cancelled", async () => {
+    platform.confirmUnsaved = vi.fn(async () => "save" as const);
+    platform.pickSavePath = vi.fn(async () => null);
+    type("x");
+    const id = app.manager.docs[0].id;
+    await app.closeTab(id);
+    expect(app.manager.get(id)).toBeDefined();
+  });
+
+  it("closes a dirty tab silently when silentClose is on, keeping its text recoverable", async () => {
+    settings.silentClose = true;
+    type("keep me");
+    await app.closeTab(app.manager.docs[0].id);
+    expect(platform.confirmUnsaved).not.toHaveBeenCalled();
+    expect(app.manager.recentlyClosed[0].text).toBe("keep me");
+  });
+});

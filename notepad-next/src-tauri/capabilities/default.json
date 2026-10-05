@@ -4,6 +4,7 @@
   "description": "Capability for the main window. The webview gets no direct filesystem scope (ADR-0002); file access goes through app-defined commands.",
   "windows": ["main"],
   "permissions": [
-    "core:default"
+    "core:default",
+    "dialog:default"
   ]
 }

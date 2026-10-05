@@ -1,0 +1,135 @@
+import { EditorState } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
+import { createEditorState } from "../editor/createEditor";
+import { DocumentManager, type LoadedFile } from "../docs/documentManager";
+import type { Ipc } from "../ipc";
+import { renderStatusBar } from "../statusbar";
+import type { Platform } from "./platform";
+import { renderTabBar } from "./tabBar";
+
+export interface AppSettings {
+  silentClose: boolean;
+}
+
+export interface AppDeps {
+  editorParent: HTMLElement;
+  tabsEl: HTMLElement;
+  statusEl: HTMLElement;
+  manager: DocumentManager;
+  platform: Platform;
+  ipc: Ipc;
+  settings: AppSettings;
+}
+
+/**
+ * Wires the document manager to one CodeMirror view, the tab bar and the status bar.
+ * Each tab keeps its own EditorState so switching tabs preserves per-tab history.
+ */
+export class App {
+  readonly manager: DocumentManager;
+  readonly view: EditorView;
+  private states = new Map<string, EditorState>();
+  private shownId: string | null = null;
+
+  constructor(private deps: AppDeps) {
+    this.manager = deps.manager;
+    this.view = new EditorView({ state: createEditorState(), parent: deps.editorParent });
+  }
+
+  start(): void {
+    this.manager.subscribe(() => this.render());
+    if (this.manager.docs.length === 0) this.manager.newDoc();
+    else this.render();
+  }
+
+  private editorExtensions() {
+    return [
+      EditorView.updateListener.of((u) => {
+        const id = this.shownId;
+        if (!id) return;
+        if (u.docChanged) this.manager.setText(id, u.state.doc.toString());
+        else if (u.selectionSet) this.renderStatus();
+      }),
+    ];
+  }
+
+  private render(): void {
+    // Drop editor state for tabs that no longer exist.
+    for (const id of this.states.keys()) if (!this.manager.get(id)) this.states.delete(id);
+
+    const active = this.manager.active;
+    if (active && active.id !== this.shownId) this.show(active.id, active.text);
+
+    renderTabBar(this.deps.tabsEl, this.manager, {
+      onActivate: (id) => this.activateTab(id),
+      onClose: (id) => void this.closeTab(id),
+      onNew: () => this.newTab(),
+      onMove: (id, to) => this.manager.move(id, to),
+    });
+    this.renderStatus();
+  }
+
+  private show(id: string, text: string): void {
+    if (this.shownId) this.states.set(this.shownId, this.view.state);
+    const state = this.states.get(id) ?? createEditorState(text, this.editorExtensions());
+    this.shownId = id;
+    this.view.setState(state);
+  }
+
+  private renderStatus(): void {
+    const doc = this.manager.active;
+    if (!doc) return;
+    renderStatusBar(this.deps.statusEl, this.view, { eol: doc.eol, encoding: doc.encoding, language: doc.language });
+  }
+
+  newTab(): void {
+    this.manager.newDoc();
+  }
+
+  activateTab(id: string): void {
+    this.manager.activate(id);
+  }
+
+  async openFileDialog(): Promise<void> {
+    const path = await this.deps.platform.pickOpenPath();
+    if (!path) return;
+    const file = await this.deps.ipc.invoke<LoadedFile>("open_file", { path });
+    this.manager.openFile(path, file);
+  }
+
+  /** Save the active tab; returns false when the user cancels the save dialog. */
+  async save(): Promise<boolean> {
+    const doc = this.manager.active;
+    return doc ? this.saveDoc(doc.id) : false;
+  }
+
+  private async saveDoc(id: string): Promise<boolean> {
+    const doc = this.manager.get(id);
+    if (!doc) return false;
+    const path = doc.path ?? (await this.deps.platform.pickSavePath(doc.title));
+    if (!path) return false;
+    await this.deps.ipc.invoke("save_file_cmd", {
+      path,
+      text: doc.text,
+      encoding: doc.encoding,
+      bom: doc.bom,
+      eol: doc.eol,
+    });
+    this.manager.markSaved(id, path);
+    return true;
+  }
+
+  async closeTab(id: string): Promise<void> {
+    const doc = this.manager.get(id);
+    if (!doc) return;
+    const decision = this.manager.requestClose(id, { silentClose: this.deps.settings.silentClose });
+    if (decision === "prompt") {
+      const choice = await this.deps.platform.confirmUnsaved(doc.title);
+      if (choice === "cancel") return;
+      if (choice === "save" && !(await this.saveDoc(id))) return;
+      this.manager.close(id);
+    }
+    // Like Notepad++, never leave the window without a document.
+    if (this.manager.docs.length === 0) this.manager.newDoc();
+  }
+}

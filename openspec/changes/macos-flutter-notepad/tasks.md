@@ -20,11 +20,11 @@
 
 ## 3. Tabs (spec: tabs)
 
-- [ ] 3.1 Write tests for the document manager (create, switch, reorder, close, untitled numbering), then implement
-- [ ] 3.2 Implement the tab bar UI with active highlight and drag reordering
-- [ ] 3.3 Implement dirty tracking and the modified indicator, with tests for set/clear on edit and save
-- [ ] 3.4 Implement the close-tab flow with Save / Don't Save / Cancel prompt when `silentClose` is off
-- [ ] 3.5 Implement silent close that moves dirty content to a bounded recently-closed list
+- [x] 3.1 Write tests for the document manager (create, switch, reorder, close, untitled numbering), then implement
+- [x] 3.2 Implement the tab bar UI with active highlight and drag reordering
+- [x] 3.3 Implement dirty tracking and the modified indicator, with tests for set/clear on edit and save
+- [x] 3.4 Implement the close-tab flow with Save / Don't Save / Cancel prompt when `silentClose` is off
+- [x] 3.5 Implement silent close that moves dirty content to a bounded recently-closed list
 
 ## 4. Settings (spec: settings)
 
