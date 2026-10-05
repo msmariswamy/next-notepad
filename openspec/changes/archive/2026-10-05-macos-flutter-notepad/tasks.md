@@ -99,7 +99,7 @@
 
 - [x] 12.1 Verify every spec scenario maps to at least one automated test; list any gaps
 - [x] 12.2 Run `openspec validate macos-flutter-notepad --type change --strict`
-- [ ] 12.3 Run the full test suite in CI on macOS and get one green run on GitHub (Windows and Linux are deferred, see ADR-0004)
+- [x] 12.3 Run the full test suite in CI on macOS and get one green run on GitHub (Windows and Linux are deferred, see ADR-0004)
 - [x] 12.4 Resolve design open questions: macOS end-to-end approach, recently-closed list UI, large-file threshold, app name and bundle identifier
 - [x] 12.5 Write `notepad-next/README.md` with build, run and test instructions
 
