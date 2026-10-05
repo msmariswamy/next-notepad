@@ -1,4 +1,5 @@
 mod files;
+mod regex_compat;
 mod session;
 mod settings;
 

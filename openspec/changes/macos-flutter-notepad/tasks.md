@@ -45,12 +45,12 @@
 
 ## 6. regex-compat layer (spec: find-replace, find-in-files, ADR-0003)
 
-- [ ] 6.1 Write the shared cross-engine test table (Normal, Extended, regex cases, replacements, flags)
-- [ ] 6.2 Implement the Normal and Extended mode translators (escape, `\n \r \t \0 \xNN`) with tests
-- [ ] 6.3 Implement regex translation (`\h`, `\R`, `\x{..}`, named groups, flag mapping) for JS and Rust targets
-- [ ] 6.4 Implement replacement translation (`\1`..`\9`, `$1`..`$9`) with tests
-- [ ] 6.5 Implement detection of lookahead, lookbehind and backreferences returning `needsJsEngine`
-- [ ] 6.6 Run the shared table through both engines in Vitest and `cargo test`; they must agree wherever Rust is eligible
+- [x] 6.1 Write the shared cross-engine test table (Normal, Extended, regex cases, replacements, flags)
+- [x] 6.2 Implement the Normal and Extended mode translators (escape, `\n \r \t \0 \xNN`) with tests
+- [x] 6.3 Implement regex translation (`\h`, `\R`, `\x{..}`, named groups, flag mapping) for JS and Rust targets
+- [x] 6.4 Implement replacement translation (`\1`..`\9`, `$1`..`$9`) with tests
+- [x] 6.5 Implement detection of lookahead, lookbehind and backreferences returning `needsJsEngine`
+- [x] 6.6 Run the shared table through both engines in Vitest and `cargo test`; they must agree wherever Rust is eligible
 
 ## 7. Find and Replace in the document (spec: find-replace)
 
