@@ -6,6 +6,9 @@ import { tauriIpc } from "./ipc";
 import { SettingsStore } from "./settings/store";
 import { openSettingsDialog } from "./settings/dialog";
 import { SessionClient } from "./session/client";
+import { FindController } from "./search/findController";
+import { openFindDialog, type FindTab } from "./search/findDialog";
+import { renderResults } from "./search/resultsPanel";
 import { restoreSession } from "./session/snapshot";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -45,11 +48,49 @@ if (inTauri) {
   window.addEventListener("pagehide", () => void session.flush());
 }
 
+const finder = new FindController(app);
+// Shortcuts have no message area; an invalid regex is reported by the dialog, so just ignore it here.
+const runQuietly = (fn: () => unknown) => {
+  try {
+    fn();
+  } catch (e) {
+    if (!(e instanceof SyntaxError)) throw e;
+  }
+};
+const resultsEl = document.getElementById("results")!;
+const showResults: Parameters<typeof openFindDialog>[0]["showResults"] = (outcome) =>
+  renderResults(
+    resultsEl,
+    outcome,
+    (docId, from, to) => {
+      app.activateTab(docId);
+      app.setSelection({ from, to });
+      app.view.focus();
+    },
+    () => (resultsEl.hidden = true),
+  );
+const openFind = (tab: FindTab) =>
+  openFindDialog(
+    {
+      controller: finder,
+      selectionText: () => {
+        const { from, to } = app.getSelection();
+        const text = app.view.state.sliceDoc(from, to);
+        return text.includes("\n") ? "" : text;
+      },
+      showResults,
+    },
+    tab,
+  );
+
 // Temporary shortcuts until the native menu bar lands (task 2.7).
 window.addEventListener("keydown", (e) => {
   if (!(e.metaKey || e.ctrlKey)) return;
   const key = e.key.toLowerCase();
-  if (key === ",") (e.preventDefault(), openSettingsDialog(settings));
+  if (key === "f" && !e.shiftKey) (e.preventDefault(), openFind("find"));
+  else if (key === "h") (e.preventDefault(), openFind("replace"));
+  else if (key === "g") (e.preventDefault(), runQuietly(() => finder.findNext({ backward: e.shiftKey })));
+  else if (key === ",") (e.preventDefault(), openSettingsDialog(settings));
   else if (key === "s") (e.preventDefault(), void app.save());
   else if (key === "o") (e.preventDefault(), void app.openFileDialog());
   else if (key === "n") (e.preventDefault(), app.newTab());

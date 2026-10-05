@@ -1,5 +1,6 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
+import { isolateHistory } from "@codemirror/commands";
 import { createEditorState } from "../editor/createEditor";
 import { DocumentManager, type LoadedFile } from "../docs/documentManager";
 import type { Ipc } from "../ipc";
@@ -91,6 +92,32 @@ export class App {
     const doc = this.manager.active;
     if (!doc) return;
     renderStatusBar(this.deps.statusEl, this.view, { eol: doc.eol, encoding: doc.encoding, language: doc.language });
+  }
+
+  getSelection(): { from: number; to: number } {
+    const r = this.view.state.selection.main;
+    return { from: r.from, to: r.to };
+  }
+
+  setSelection(range: { from: number; to: number }): void {
+    this.view.dispatch({ selection: { anchor: range.from, head: range.to }, scrollIntoView: true });
+  }
+
+  /** Apply edits as one transaction (one undo step) to the shown tab, or to a background tab's stored state. */
+  applyChangesToDoc(id: string, changes: { from: number; to: number; insert: string }[]): void {
+    if (changes.length === 0) return;
+    // isolateHistory keeps a Replace All from merging with earlier typing, so one undo reverts exactly it.
+    const isolate = isolateHistory.of("full");
+    if (id === this.shownId) {
+      this.view.dispatch({ changes, annotations: isolate });
+      return;
+    }
+    const doc = this.manager.get(id);
+    if (!doc) return;
+    const base = this.states.get(id) ?? createEditorState(doc.text, this.editorExtensions());
+    const next = base.update({ changes, annotations: isolate }).state;
+    this.states.set(id, next);
+    this.manager.setText(id, next.doc.toString());
   }
 
   newTab(): void {

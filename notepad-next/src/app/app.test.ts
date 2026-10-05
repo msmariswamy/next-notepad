@@ -192,3 +192,32 @@ describe("quitting", () => {
     expect(onQuit).toHaveBeenCalled();
   });
 });
+
+describe("editing helpers used by Find/Replace", () => {
+  it("reports and sets the selection", () => {
+    type("hello");
+    app.setSelection({ from: 1, to: 3 });
+    expect(app.getSelection()).toEqual({ from: 1, to: 3 });
+  });
+
+  it("applies changes to the shown tab as one undo step", () => {
+    type("x x x");
+    app.applyChangesToDoc(app.manager.docs[0].id, [
+      { from: 0, to: 1, insert: "y" },
+      { from: 2, to: 3, insert: "y" },
+    ]);
+    expect(app.view.state.doc.toString()).toBe("y y x");
+    expect(app.manager.docs[0].text).toBe("y y x");
+  });
+
+  it("applies changes to a background tab and marks it modified", () => {
+    type("first");
+    const firstId = app.manager.docs[0].id;
+    app.newTab();
+    app.applyChangesToDoc(firstId, [{ from: 0, to: 5, insert: "FIRST" }]);
+    expect(app.manager.get(firstId)!.text).toBe("FIRST");
+    expect(app.manager.get(firstId)!.dirty).toBe(true);
+    app.activateTab(firstId);
+    expect(app.view.state.doc.toString()).toBe("FIRST");
+  });
+});

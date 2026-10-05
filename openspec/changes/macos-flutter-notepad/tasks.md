@@ -54,15 +54,15 @@
 
 ## 7. Find and Replace in the document (spec: find-replace)
 
-- [ ] 7.1 Write tests for the search service (Find Next forward/backward, wrap, whole word, match case, in selection), then implement on CodeMirror state
-- [ ] 7.2 Build the Find dialog shell with tabs Find, Replace, Find in Files, Find in Projects, Mark and the layout in the reference screenshot
-- [ ] 7.3 Implement Find Next, Count, Find All in Current Document and Find All in All Opened Documents with the results panel
-- [ ] 7.4 Implement Replace, Replace All and Replace All in All Opened Documents; Replace All is a single undo step
-- [ ] 7.5 Implement search modes Normal, Extended and Regular expression with ". matches newline" and inline invalid-regex errors
-- [ ] 7.6 Implement search history for Find what and Replace with, persisted across restarts
-- [ ] 7.7 Implement the Transparency option (on losing focus / always, adjustable level)
-- [ ] 7.8 Wire keyboard shortcuts and menu entries for Find, Replace, Find Next/Previous
-- [ ] 7.9 End-to-end test: open Replace tab, run Replace All with capture groups, verify text and undo
+- [x] 7.1 Write tests for the search service (Find Next forward/backward, wrap, whole word, match case, in selection), then implement on CodeMirror state
+- [x] 7.2 Build the Find dialog shell with tabs Find, Replace, Find in Files, Find in Projects, Mark and the layout in the reference screenshot
+- [x] 7.3 Implement Find Next, Count, Find All in Current Document and Find All in All Opened Documents with the results panel
+- [x] 7.4 Implement Replace, Replace All and Replace All in All Opened Documents; Replace All is a single undo step
+- [x] 7.5 Implement search modes Normal, Extended and Regular expression with ". matches newline" and inline invalid-regex errors
+- [x] 7.6 Implement search history for Find what and Replace with, persisted across restarts
+- [x] 7.7 Implement the Transparency option (on losing focus / always, adjustable level)
+- [x] 7.8 Wire keyboard shortcuts and menu entries for Find, Replace, Find Next/Previous
+- [x] 7.9 End-to-end test: open Replace tab, run Replace All with capture groups, verify text and undo
 
 ## 8. Mark and bookmarks (spec: mark)
 

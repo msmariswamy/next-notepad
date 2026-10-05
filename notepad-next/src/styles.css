@@ -24,3 +24,23 @@ dialog.confirm { border: 1px solid #8886; border-radius: 8px; padding: 16px 20px
 .cm-ws-tab { background: linear-gradient(#8886, #8886) left center / 100% 1px no-repeat; }
 dialog.settings { border: 1px solid #8886; border-radius: 8px; padding: 16px 20px; min-width: 360px; }
 .settings-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 10px; }
+#results { max-height: 30vh; overflow: auto; border-top: 1px solid #8884; font-size: 12px; }
+.results-header { display: flex; justify-content: space-between; padding: 3px 10px; background: #8881; position: sticky; top: 0; }
+.results-header button { border: none; background: none; color: inherit; cursor: pointer; }
+.results-doc { padding: 2px 10px; font-weight: 600; }
+.results-hit { padding: 1px 24px; cursor: pointer; font-family: ui-monospace, Menlo, monospace; white-space: pre; }
+.results-hit:hover { background: #8882; }
+dialog.find-dialog { position: fixed; right: 24px; bottom: 48px; left: auto; top: auto; margin: 0; width: 560px; max-width: calc(100vw - 48px); padding: 0 12px 12px; border: 1px solid #8886; border-radius: 8px; box-shadow: 0 8px 30px #0005; }
+.find-tabs { display: flex; gap: 2px; margin: 0 -12px 10px; padding: 6px 8px 0; border-bottom: 1px solid #8884; }
+.find-tab { border: 1px solid #8884; border-bottom: none; background: none; color: inherit; padding: 4px 10px; border-radius: 4px 4px 0 0; cursor: pointer; }
+.find-tab.active { background: #8882; font-weight: 600; }
+.find-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.find-row span { width: 90px; text-align: right; }
+.find-row input { flex: 1; }
+.find-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
+.find-options, .find-mode { display: flex; flex-direction: column; gap: 4px; }
+.find-check { display: flex; align-items: center; gap: 6px; }
+.find-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.find-message { min-height: 1.4em; margin-top: 6px; font-size: 12px; }
+.find-message.error { color: #c92a2a; }
+.find-transparency { margin-top: 4px; }
