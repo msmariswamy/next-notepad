@@ -19,7 +19,7 @@ rules:
   adr:
     - Must use architectural-decision-records skill
   specs:
-    # - Must use spec-as-source skill
+     - Must use gherkin-authoring skill
   tasks:
     # - Must use spec-as-source skill
 
