@@ -111,6 +111,6 @@ Pushing the tag builds a universal macOS `.dmg` (Apple Silicon and Intel) and a 
 and attaches both to a **draft** GitHub Release. Review it, then press **Publish release**. You can also run the workflow by
 hand from the Actions tab and type the tag.
 
-Unsigned builds work but show warnings (macOS Gatekeeper: right-click the app > Open; Windows SmartScreen: More info >
-Run anyway). To sign and notarize the macOS build, add the `APPLE_*` repository secrets listed (commented) in
+Builds are ad-hoc signed but not notarized, so they show warnings (macOS Gatekeeper: System Settings > Privacy & Security >
+Open Anyway; Windows SmartScreen: More info > Run anyway). To sign and notarize the macOS build, add the `APPLE_*` repository secrets listed (commented) in
 `.github/workflows/release-next-notepad.yml` and uncomment them.

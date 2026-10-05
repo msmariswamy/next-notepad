@@ -34,8 +34,10 @@ Get the latest installer from the [Releases](../../releases) page (every push to
 | macOS (Apple Silicon and Intel) | `next-notepad_<version>_universal.dmg` |
 | Windows | `next-notepad_<version>_x64-setup.exe` |
 
-Builds are unsigned for now. On macOS, right-click the app and choose **Open** the first time. On Windows, choose
-**More info** and then **Run anyway** in the SmartScreen prompt.
+Builds are not notarized yet, so the first launch needs one extra step. On macOS, drag the app to Applications, try to open
+it, then go to **System Settings > Privacy & Security** and click **Open Anyway** (on older macOS, right-click the app and
+choose **Open**). If macOS still says the app is damaged, run `xattr -dr com.apple.quarantine /Applications/next-notepad.app`.
+On Windows, choose **More info** and then **Run anyway** in the SmartScreen prompt.
 
 ## Build and run from source
 

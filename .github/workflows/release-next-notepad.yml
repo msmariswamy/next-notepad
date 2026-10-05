@@ -85,7 +85,7 @@ jobs:
           projectPath: notepad-next
           tagName: ${{ needs.check-version.outputs.tag }}
           releaseName: "next-notepad ${{ needs.check-version.outputs.tag }}"
-          releaseBody: "Download the .dmg (macOS, Apple Silicon and Intel) or the -setup.exe (Windows). Builds are unsigned unless signing secrets are configured: on macOS right-click the app and choose Open the first time; on Windows choose More info > Run anyway."
+          releaseBody: "Download the .dmg (macOS, Apple Silicon and Intel) or the -setup.exe (Windows). Builds are not notarized: on macOS use System Settings > Privacy & Security > Open Anyway the first time (or run xattr -dr com.apple.quarantine on the app); on Windows choose More info > Run anyway."
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
