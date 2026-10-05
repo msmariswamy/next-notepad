@@ -169,3 +169,29 @@ test.describe("syntax highlighting", () => {
     await expect(page.locator(".cm-content .tok-number")).toHaveCount(1);
   });
 });
+
+test.describe("submenus are not clipped", () => {
+  test("Edit > Line Operations opens fully visible beside the parent menu", async ({ page }) => {
+    await menu(page, "Edit").click();
+    await page.getByTestId("menubar").locator('[data-submenu="Line Operations"]').hover();
+    const parent = (await page.locator(".menu.open > .menu-dropdown").boundingBox())!;
+    const nested = page.getByTestId("menubar").locator(".menu-nested:visible").first();
+    await expect(nested.locator('[data-command="line.removeDuplicates"]')).toBeInViewport();
+    const box = (await nested.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(parent.x + parent.width - 2); // opens to the right, not hidden inside
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+    // The top-level menu itself must not scroll or clip its children.
+    const overflow = await page.locator(".menu.open > .menu-dropdown").evaluate((el) => getComputedStyle(el).overflowY);
+    expect(overflow).toBe("visible");
+  });
+
+  test("a tall submenu stays inside a short window", async ({ page }) => {
+    await page.setViewportSize({ width: 1000, height: 420 });
+    await menu(page, "Edit").click();
+    await page.getByTestId("menubar").locator('[data-submenu="Line Operations"]').hover();
+    const box = (await page.getByTestId("menubar").locator(".menu-nested:visible").first().boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(420);
+  });
+});

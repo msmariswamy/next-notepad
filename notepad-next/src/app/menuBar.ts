@@ -46,6 +46,16 @@ export function renderMenuBar(nav: HTMLElement, commands: Command[]): { close():
       return item;
     });
 
+  /** Shift a nested menu up, or flip it to the left, so it never runs off the window. */
+  const keepOnScreen = (nested: HTMLElement) => {
+    nested.style.top = "-4px";
+    nested.classList.remove("flip");
+    const r = nested.getBoundingClientRect();
+    if (r.right > window.innerWidth - 4) nested.classList.add("flip");
+    const overflow = r.bottom - (window.innerHeight - 8);
+    if (overflow > 0) nested.style.top = `${Math.max(-4 - overflow, -(r.top - 4) - 4)}px`;
+  };
+
   /** An item that opens a nested list to its right, on hover or click. */
   const buildSubmenu = (title: string, items: MenuItem[]): HTMLElement => {
     const holder = document.createElement("div");
@@ -72,6 +82,7 @@ export function renderMenuBar(nav: HTMLElement, commands: Command[]): { close():
       }
       if (nested.hidden) nested.replaceChildren(...buildItems(items)); // fresh checked states
       nested.hidden = false;
+      keepOnScreen(nested);
     };
     trigger.addEventListener("mouseenter", open);
     trigger.addEventListener("click", (e) => {
