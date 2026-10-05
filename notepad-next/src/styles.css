@@ -44,3 +44,11 @@ dialog.find-dialog { position: fixed; right: 24px; bottom: 48px; left: auto; top
 .find-message { min-height: 1.4em; margin-top: 6px; font-size: 12px; }
 .find-message.error { color: #c92a2a; }
 .find-transparency { margin-top: 4px; }
+.cm-mark-1, .mark-style-1 { background: #ffe066; color: #000; }
+.cm-mark-2, .mark-style-2 { background: #8ce99a; color: #000; }
+.cm-mark-3, .mark-style-3 { background: #74c0fc; color: #000; }
+.cm-mark-4, .mark-style-4 { background: #ffa8a8; color: #000; }
+.cm-mark-5, .mark-style-5 { background: #d0bfff; color: #000; }
+.mark-swatch { padding: 0 6px; border-radius: 3px; }
+.cm-bookmark-gutter { width: 14px; }
+.cm-bookmark { color: #1c7ed6; cursor: pointer; font-size: 10px; }

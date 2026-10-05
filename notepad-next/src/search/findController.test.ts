@@ -4,6 +4,7 @@ import { createMockIpc } from "../ipc";
 import { DocumentManager } from "../docs/documentManager";
 import { DEFAULT_SETTINGS } from "../settings/model";
 import { FindController } from "./findController";
+import { getBookmarkLines, getMarks } from "../editor/marks";
 
 let app: App;
 let find: FindController;
@@ -182,5 +183,73 @@ describe("Replace", () => {
     expect(find.replaceAllInOpened()).toEqual({ replacements: 2, files: 2 });
     expect(app.manager.docs.map((d) => d.text)).toEqual(["bar one", "bar two"]);
     expect(app.manager.docs.every((d) => d.dirty)).toBe(true);
+  });
+});
+
+describe("Mark", () => {
+  it("marks every match in the chosen style", () => {
+    setText("ab ab");
+    find.state.pattern = "ab";
+    expect(find.markAll({ style: 2, bookmarkLine: false, purge: false })).toBe(2);
+    expect(getMarks(app.view.state)).toEqual([
+      { style: 2, from: 0, to: 2 },
+      { style: 2, from: 3, to: 5 },
+    ]);
+  });
+
+  it("bookmarks the lines that contain matches", () => {
+    setText("error one\nfine\nerror two");
+    find.state.pattern = "error";
+    find.markAll({ style: 1, bookmarkLine: true, purge: false });
+    expect(getBookmarkLines(app.view.state)).toEqual([1, 3]);
+  });
+
+  it("purges the previous marks of the same style when asked", () => {
+    setText("foo bar");
+    find.state.pattern = "foo";
+    find.markAll({ style: 1, bookmarkLine: false, purge: false });
+    find.state.pattern = "bar";
+    find.markAll({ style: 1, bookmarkLine: false, purge: true });
+    expect(getMarks(app.view.state).map((m) => [m.from, m.to])).toEqual([[4, 7]]);
+  });
+
+  it("marks only the selection when In selection is on", () => {
+    setText("x x x");
+    app.setSelection({ from: 0, to: 3 });
+    find.state.pattern = "x";
+    find.state.inSelection = true;
+    expect(find.markAll({ style: 1, bookmarkLine: false, purge: false })).toBe(2);
+  });
+
+  it("clears marks and bookmarks", () => {
+    setText("a\na");
+    find.state.pattern = "a";
+    find.markAll({ style: 1, bookmarkLine: true, purge: false });
+    find.clearMarks();
+    find.clearBookmarks();
+    expect(getMarks(app.view.state)).toEqual([]);
+    expect(getBookmarkLines(app.view.state)).toEqual([]);
+  });
+
+  it("keeps marks per tab", () => {
+    setText("foo");
+    find.state.pattern = "foo";
+    find.markAll({ style: 1, bookmarkLine: false, purge: false });
+    app.newTab();
+    expect(getMarks(app.view.state)).toEqual([]);
+    app.activateTab(app.manager.docs[0].id);
+    expect(getMarks(app.view.state).length).toBe(1);
+  });
+
+  it("navigates bookmarks with wrap-around", () => {
+    setText("a\nb\nc");
+    find.state.pattern = "[ac]";
+    find.state.opts.mode = "regex";
+    find.markAll({ style: 1, bookmarkLine: true, purge: false });
+    app.setSelection({ from: 0, to: 0 });
+    expect(find.gotoBookmark(false)).toBe(true);
+    expect(app.getSelection().from).toBe(4);
+    find.gotoBookmark(false);
+    expect(app.getSelection().from).toBe(0);
   });
 });

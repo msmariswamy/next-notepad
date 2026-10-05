@@ -1,6 +1,7 @@
 import type { App } from "../app/app";
 import type { Query, Range } from "./searchService";
 import { countMatches, findAll, findNext, planReplaceAll, planReplaceCurrent } from "./searchService";
+import { addBookmarks, addMarks, clearBookmarks, clearMarks, neighbourBookmark, toggleBookmark } from "../editor/marks";
 import { DEFAULT_PATTERN_OPTIONS, type PatternOptions } from "./regexCompat";
 
 export interface FindState {
@@ -163,5 +164,38 @@ export class FindController {
       files++;
     }
     return { replacements, files };
+  }
+
+  // ---- Mark tab (spec: mark)
+
+  /**
+   * Mark every match in the current tab with the chosen style. `purge` clears that style first;
+   * `bookmarkLine` also bookmarks each matching line. Returns the number of matches marked.
+   */
+  markAll(o: { style: number; bookmarkLine: boolean; purge: boolean }): number {
+    const ranges = findAll(this.activeText(), this.query(), this.range());
+    addMarks(this.app.view, o.style, ranges, o.purge);
+    if (o.bookmarkLine) addBookmarks(this.app.view, ranges.map((r) => r.from));
+    return ranges.length;
+  }
+
+  clearMarks(style?: number): void {
+    clearMarks(this.app.view, style);
+  }
+
+  clearBookmarks(): void {
+    clearBookmarks(this.app.view);
+  }
+
+  toggleBookmarkAtCaret(): void {
+    toggleBookmark(this.app.view, this.app.getSelection().from);
+  }
+
+  /** Move the caret to the next/previous bookmarked line; false when there are no bookmarks. */
+  gotoBookmark(backward: boolean): boolean {
+    const target = neighbourBookmark(this.app.view.state, this.app.getSelection().from, backward);
+    if (target === null) return false;
+    this.app.setSelection({ from: target, to: target });
+    return true;
   }
 }

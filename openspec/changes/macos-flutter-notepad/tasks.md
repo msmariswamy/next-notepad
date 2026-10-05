@@ -66,10 +66,10 @@
 
 ## 8. Mark and bookmarks (spec: mark)
 
-- [ ] 8.1 Write tests for the mark StateField (add, clear by style, purge, mapping through edits), then implement
-- [ ] 8.2 Implement five mark styles with CSS classes and a style selector on the Mark tab
-- [ ] 8.3 Implement bookmark line gutter markers with next/previous bookmark navigation and tests
-- [ ] 8.4 Implement Mark All, Purge for each search and Clear all marks
+- [x] 8.1 Write tests for the mark StateField (add, clear by style, purge, mapping through edits), then implement
+- [x] 8.2 Implement five mark styles with CSS classes and a style selector on the Mark tab
+- [x] 8.3 Implement bookmark line gutter markers with next/previous bookmark navigation and tests
+- [x] 8.4 Implement Mark All, Purge for each search and Clear all marks
 
 ## 9. Find in Files and Projects (spec: find-in-files, ADR-0002, ADR-0003)
 

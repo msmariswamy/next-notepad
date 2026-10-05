@@ -2,6 +2,7 @@ import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { isolateHistory } from "@codemirror/commands";
 import { createEditorState } from "../editor/createEditor";
+import { marksExtension } from "../editor/marks";
 import { DocumentManager, type LoadedFile } from "../docs/documentManager";
 import type { Ipc } from "../ipc";
 import { renderStatusBar } from "../statusbar";
@@ -48,6 +49,7 @@ export class App {
   private editorExtensions() {
     return [
       ...settingsExtensions(this.deps.settings.get()),
+      ...marksExtension(),
       EditorView.updateListener.of((u) => {
         const id = this.shownId;
         if (!id) return;

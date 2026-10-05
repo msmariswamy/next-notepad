@@ -85,11 +85,14 @@ const openFind = (tab: FindTab) =>
 
 // Temporary shortcuts until the native menu bar lands (task 2.7).
 window.addEventListener("keydown", (e) => {
-  if (!(e.metaKey || e.ctrlKey)) return;
   const key = e.key.toLowerCase();
+  // F2 / Shift+F2 step through bookmarks like Notepad++; Cmd+F2 toggles one.
+  if (key === "f2" && !(e.metaKey || e.ctrlKey)) return void (e.preventDefault(), finder.gotoBookmark(e.shiftKey));
+  if (!(e.metaKey || e.ctrlKey)) return;
   if (key === "f" && !e.shiftKey) (e.preventDefault(), openFind("find"));
   else if (key === "h") (e.preventDefault(), openFind("replace"));
   else if (key === "g") (e.preventDefault(), runQuietly(() => finder.findNext({ backward: e.shiftKey })));
+  else if (key === "f2") (e.preventDefault(), finder.toggleBookmarkAtCaret())
   else if (key === ",") (e.preventDefault(), openSettingsDialog(settings));
   else if (key === "s") (e.preventDefault(), void app.save());
   else if (key === "o") (e.preventDefault(), void app.openFileDialog());

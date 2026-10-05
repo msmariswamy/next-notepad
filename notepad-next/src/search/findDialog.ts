@@ -196,6 +196,41 @@ function buildDialog(deps: FindDialogDeps, initialTab: FindTab): FindDialogHandl
   const replaceFindNext = btn("Find Next", run(() => (controller.findNext() ? "" : "Can't find the text")), "find-next");
   replaceButtons.append(replaceFindNext, replaceBtn, replaceAllBtn, replaceAllOpenedBtn);
 
+  // ---- Mark tab
+  const markPanel = el("div", { className: "find-panel find-panel-mark" });
+  let markStyle = 1;
+  const markOpts = { bookmarkLine: false, purge: false };
+  const styleGroup = el("fieldset", { className: "find-mark-styles" });
+  styleGroup.append(el("legend", { textContent: "Marking" }));
+  for (let i = 1; i <= 5; i++) {
+    const r = el("input", { type: "radio", name: "markStyle", value: String(i), checked: i === 1 });
+    r.addEventListener("change", () => (markStyle = i));
+    const sw = el("span", { className: `mark-swatch mark-style-${i}`, textContent: `Style ${i}` });
+    const l = el("label", { className: "find-check" });
+    l.append(r, sw);
+    styleGroup.append(l);
+  }
+  const markChecks = el("div", { className: "find-options" });
+  markChecks.append(
+    checkbox("bookmarkLine", "Bookmark line", false, (v) => (markOpts.bookmarkLine = v)),
+    checkbox("purgeMarks", "Purge for each search", false, (v) => (markOpts.purge = v)),
+  );
+  const markAllBtn = btn("Mark All", run(() => {
+    const n = controller.markAll({ style: markStyle, ...markOpts });
+    return `Mark: ${n} match${n === 1 ? "" : "es"} marked`;
+  }));
+  const clearMarksBtn = btn("Clear all marks", () => {
+    controller.clearMarks();
+    say("All marks cleared");
+  });
+  const clearBookmarksBtn = btn("Clear all bookmarks", () => {
+    controller.clearBookmarks();
+    say("All bookmarks cleared");
+  });
+  const markButtons = el("div", { className: "find-buttons" });
+  markButtons.append(markAllBtn, clearMarksBtn, clearBookmarksBtn);
+  markPanel.append(el("div", { className: "find-grid" }, markChecks, styleGroup), markButtons);
+
   // ---- transparency
   const transparency: TransparencySettings = { enabled: false, mode: "blur", level: 70 };
   let focused = true;
@@ -232,7 +267,8 @@ function buildDialog(deps: FindDialogDeps, initialTab: FindTab): FindDialogHandl
 
   // ---- panels for later tabs
   const panels = new Map<FindTab, HTMLElement>();
-  for (const t of ["files", "projects", "mark"] as FindTab[]) {
+  panels.set("mark", markPanel);
+  for (const t of ["files", "projects"] as FindTab[]) {
     const p = el("div", { className: `find-panel find-panel-${t}` });
     p.dataset.panel = t;
     panels.set(t, p);
@@ -244,7 +280,7 @@ function buildDialog(deps: FindDialogDeps, initialTab: FindTab): FindDialogHandl
 
   function setTab(tab: FindTab) {
     for (const [id, b] of tabButtons) b.classList.toggle("active", id === tab);
-    const simple = tab === "find" || tab === "replace";
+    const simple = tab === "find" || tab === "replace" || tab === "mark";
     dialog.dataset.tab = tab;
     main.hidden = !simple;
     findButtons.hidden = tab !== "find";
