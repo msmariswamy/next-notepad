@@ -34,6 +34,9 @@
     ],
     "macOS": {
       "signingIdentity": "-"
-    }
+    },
+    "publisher": "Mariswamy Pillai",
+    "copyright": "\u00a9 2026 Mariswamy Pillai",
+    "shortDescription": "A fast, cross-platform text and code editor"
   }
 }

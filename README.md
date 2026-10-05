@@ -1,5 +1,7 @@
 # next-notepad
 
+> **Idea and creation by Mariswamy Pillai.**
+
 [![Latest release](https://img.shields.io/github/v/release/msmariswamy/next-notepad?include_prereleases&label=release)](../../releases/latest)
 [![Tests](https://img.shields.io/github/actions/workflow/status/msmariswamy/next-notepad/notepad-next.yml?label=tests)](../../actions/workflows/notepad-next.yml)
 
@@ -71,6 +73,10 @@ cd src-tauri && cargo test         # Rust backend tests
 | `openspec/` | Requirements, design, decisions and task list for the app |
 | `adr/` | Architecture decision records |
 | `.github/workflows/` | CI tests and the release workflow |
+
+## Credits
+
+next-notepad was conceived and created by **Mariswamy Pillai**. The same credit is shown in the app under **Help > About**.
 
 ## License
 

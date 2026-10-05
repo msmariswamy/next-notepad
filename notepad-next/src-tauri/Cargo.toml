@@ -1,8 +1,8 @@
 [package]
 name = "notepad-next"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "next-notepad: a fast, cross-platform text and code editor"
+authors = ["Mariswamy Pillai"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

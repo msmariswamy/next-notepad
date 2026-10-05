@@ -20,9 +20,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("menu bar", () => {
-  test("shows all eight menus", async ({ page }) => {
+  test("shows all nine menus", async ({ page }) => {
     const titles = await page.getByTestId("menubar").locator(".menu-title").allTextContents();
-    expect(titles).toEqual(["File", "Edit", "Search", "View", "Encoding", "Language", "JSON", "Settings"]);
+    expect(titles).toEqual(["File", "Edit", "Search", "View", "Encoding", "Language", "JSON", "Settings", "Help"]);
   });
 
   test("File > New opens a second tab", async ({ page }) => {
@@ -194,4 +194,15 @@ test.describe("submenus are not clipped", () => {
     expect(box.y).toBeGreaterThanOrEqual(0);
     expect(box.y + box.height).toBeLessThanOrEqual(420);
   });
+});
+
+test("Help > About credits the author and shows the version", async ({ page }) => {
+  await page.getByTestId("menubar").locator(".menu-title", { hasText: /^Help$/ }).click();
+  await page.getByTestId("menubar").locator('[data-command="help.about"]').click();
+  const about = page.getByTestId("about-dialog");
+  await expect(about).toBeVisible();
+  await expect(about).toContainText("Idea and creation by Mariswamy Pillai");
+  await expect(about).toContainText("Version 0.1.0");
+  await about.getByRole("button", { name: "Close" }).click();
+  await expect(about).toHaveCount(0);
 });

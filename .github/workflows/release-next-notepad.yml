@@ -1,7 +1,7 @@
 name: release-next-notepad
 
 # Push a tag like v0.1.0 to build a universal macOS .dmg and a Windows .exe installer
-# and attach them to a DRAFT GitHub Release. You review the draft, then publish it.
+# and publish them on the Releases page automatically (with generated release notes).
 on:
   push:
     tags: ["v*"]
@@ -86,6 +86,7 @@ jobs:
           tagName: ${{ needs.check-version.outputs.tag }}
           releaseName: "next-notepad ${{ needs.check-version.outputs.tag }}"
           releaseBody: "Download the .dmg (macOS, Apple Silicon and Intel) or the -setup.exe (Windows). Builds are not notarized: on macOS use System Settings > Privacy & Security > Open Anyway the first time (or run xattr -dr com.apple.quarantine on the app); on Windows choose More info > Run anyway."
-          releaseDraft: true
+          releaseDraft: false
+          generateReleaseNotes: true
           prerelease: false
           args: ${{ matrix.args }}

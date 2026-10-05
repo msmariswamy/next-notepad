@@ -50,8 +50,8 @@ describe("command registry", () => {
     expect(new Set(accels).size).toBe(accels.length);
   });
 
-  it("menus cover File, Edit, Search, View, Encoding, Language, JSON and Settings", () => {
-    expect(MENU.map((m) => m.label)).toEqual(["File", "Edit", "Search", "View", "Encoding", "Language", "JSON", "Settings"]);
+  it("menus cover File, Edit, Search, View, Encoding, Language, JSON, Settings and Help", () => {
+    expect(MENU.map((m) => m.label)).toEqual(["File", "Edit", "Search", "View", "Encoding", "Language", "JSON", "Settings", "Help"]);
   });
 });
 
@@ -322,6 +322,13 @@ describe("Edit and Search submenus (Notepad++ layout)", () => {
     title("View").click();
     const labels = [...nav().querySelectorAll(".menu.open .menu-label")].map((l) => l.textContent);
     expect(labels.slice(0, 3)).toEqual(["Word Wrap", "Show Whitespace", "Show All Characters"]);
+  });
+});
+
+describe("Help menu", () => {
+  it("About opens a dialog crediting the author", () => {
+    void cmd("help.about").run();
+    expect(document.querySelector('[data-testid="about-dialog"]')!.textContent).toContain("Mariswamy Pillai");
   });
 });
 

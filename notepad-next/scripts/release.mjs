@@ -4,7 +4,7 @@
 //
 // Bumps the version in tauri.conf.json, package.json, package-lock.json, Cargo.toml and Cargo.lock,
 // commits "Release vX.Y.Z" and tags vX.Y.Z. With --push it also pushes the commit and the tag, which
-// starts the release workflow (macOS .dmg + Windows .exe in a draft GitHub Release).
+// starts the release workflow (macOS .dmg + Windows .exe published on the GitHub Releases page).
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";

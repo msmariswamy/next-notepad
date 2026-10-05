@@ -1,5 +1,7 @@
 # next-notepad
 
+Idea and creation by **Mariswamy Pillai**.
+
 A cross-platform (macOS first, then Linux and Windows) Notepad++-style editor built with
 **Tauri 2** (Rust backend) and **CodeMirror 6** (TypeScript frontend). See
 `openspec/changes/macos-flutter-notepad/` for the proposal, design, specs and tasks, and `adr/` for
@@ -108,8 +110,8 @@ commit `Release vX.Y.Z` and the tag `vX.Y.Z`, and refuses to run on a dirty work
 Without `--push`, finish with `git push origin main && git push origin vX.Y.Z`.
 
 Pushing the tag builds a universal macOS `.dmg` (Apple Silicon and Intel) and a Windows `.exe`, runs the unit tests first,
-and attaches both to a **draft** GitHub Release. Review it, then press **Publish release**. You can also run the workflow by
-hand from the Actions tab and type the tag.
+and publishes both on the repository's **Releases** page automatically, with generated release notes. You can also run the workflow
+by hand from the Actions tab and type the tag.
 
 Builds are ad-hoc signed but not notarized, so they show warnings (macOS Gatekeeper: System Settings > Privacy & Security >
 Open Anyway; Windows SmartScreen: More info > Run anyway). To sign and notarize the macOS build, add the `APPLE_*` repository secrets listed (commented) in

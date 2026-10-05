@@ -6,6 +6,7 @@ import type { App } from "./app";
 import { LANGUAGES } from "../lang/languages";
 import { runJsonCommand } from "../json/jsonCommands";
 import { runFormatDocument } from "../format/formatCommand";
+import { openAboutDialog } from "./about";
 import type { FindController } from "../search/findController";
 import type { FindTab } from "../search/findDialog";
 import type { SettingsStore } from "../settings/store";
@@ -207,6 +208,8 @@ export function createCommands(ctx: CommandContext): Command[] {
     { id: "json.escape", label: "Escape as JSON String", run: () => void runJsonCommand(app, "escape") },
     { id: "json.unescape", label: "Unescape JSON String", run: () => void runJsonCommand(app, "unescape") },
     { id: "json.validate", label: "Validate", accelerator: "Mod+Alt+V", run: () => void runJsonCommand(app, "validate") },
+    // Help
+    { id: "help.about", label: "About next-notepad", run: () => void openAboutDialog() },
     // Settings
     { id: "settings.open", label: "Preferences…", accelerator: "Mod+,", run: () => ctx.openSettings() },
   ];
@@ -289,6 +292,7 @@ export const MENU: MenuModel[] = [
   { label: "Language", items: LANGUAGES.map((l) => `lang.${l.name}`) },
   { label: "JSON", items: ["json.pretty", "json.pretty4", "json.prettyTabs", "json.minify", "json.sortKeys", "-", "json.escape", "json.unescape", "-", "json.validate"] },
   { label: "Settings", items: ["settings.open"] },
+  { label: "Help", items: ["help.about"] },
 ];
 
 /** Every command id referenced by a menu, flattened (used by tests). */
