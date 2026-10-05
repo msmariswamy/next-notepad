@@ -14,9 +14,9 @@
 - [x] 2.2 Write tests for encoding and EOL detection (UTF-8, UTF-8 BOM, UTF-16, CRLF/LF), then implement with `encoding_rs`
 - [x] 2.3 Embed CodeMirror 6 with line numbers, multi-cursor, rectangular selection and code folding
 - [x] 2.4 Implement the status bar (Ln/Col, selection, length, lines, EOL, encoding, language) with tests for its formatting logic
-- [ ] 2.5 Implement EOL conversion and encoding display; round-trip save keeps encoding and EOL
-- [ ] 2.6 Implement large-file warning (default 50 MB) with a test for the threshold check
-- [ ] 2.7 Build the menu bar (File, Edit, Search, View, Encoding, Language, Settings) with native shortcuts per platform
+- [x] 2.5 Implement EOL conversion and encoding display; round-trip save keeps encoding and EOL
+- [x] 2.6 Implement large-file warning (default 50 MB) with a test for the threshold check
+- [x] 2.7 Build the menu bar (File, Edit, Search, View, Encoding, Language, Settings) with native shortcuts per platform
 
 ## 3. Tabs (spec: tabs)
 
@@ -83,17 +83,17 @@
 
 ## 10. JSON tools (spec: json-tools)
 
-- [ ] 10.1 Write tests for pretty-print, minify, and validate with line/column error positions, then implement
-- [ ] 10.2 Implement the commands for the whole document and for the selection; apply as one undo step
-- [ ] 10.3 Show validation results and move the caret to the error position
-- [ ] 10.4 Document formatting side effects (duplicate keys, number normalisation) in user-facing help
+- [x] 10.1 Write tests for pretty-print, minify, and validate with line/column error positions, then implement
+- [x] 10.2 Implement the commands for the whole document and for the selection; apply as one undo step
+- [x] 10.3 Show validation results and move the caret to the error position
+- [x] 10.4 Document formatting side effects (duplicate keys, number normalisation) in user-facing help
 
 ## 11. Syntax highlighting (spec: syntax-highlighting)
 
-- [ ] 11.1 Write tests for extension-to-language detection, then implement with fallback to plain text
-- [ ] 11.2 Add the Language menu with manual override
-- [ ] 11.3 Integrate language packages for JSON, JavaScript, TypeScript, HTML, CSS, XML, Markdown, YAML, Python, Java, C, C++, Rust, Go, shell and SQL
-- [ ] 11.4 Add light and dark highlight themes with a contrast check, switchable without reloading documents
+- [x] 11.1 Write tests for extension-to-language detection, then implement with fallback to plain text
+- [x] 11.2 Add the Language menu with manual override
+- [x] 11.3 Integrate language packages for JSON, JavaScript, TypeScript, HTML, CSS, XML, Markdown, YAML, Python, Java, C, C++, Rust, Go, shell and SQL
+- [x] 11.4 Add light and dark highlight themes with a contrast check, switchable without reloading documents
 
 ## 12. Hardening and release readiness
 
@@ -101,4 +101,41 @@
 - [ ] 12.2 Run `openspec validate macos-flutter-notepad --type change --strict`
 - [ ] 12.3 Run the full test suite on macOS, Windows and Linux in CI
 - [ ] 12.4 Resolve design open questions: macOS end-to-end approach, recently-closed list UI, large-file threshold, app name and bundle identifier
-- [ ] 12.5 Write `notepad-next/README.md` with build, run and test instructions
+- [x] 12.5 Write `notepad-next/README.md` with build, run and test instructions
+
+## 13. Text transforms (spec: text-transforms)
+
+- [ ] 13.1 Write tests for pure case converters (upper, lower, proper, proper blend, sentence, sentence blend, invert, random), then implement
+- [ ] 13.2 Write tests for pure line operations (duplicate, remove duplicates, remove consecutive duplicates, split, join, move up/down, remove empty, insert blank, reverse, randomize), then implement
+- [ ] 13.3 Write tests for the sort comparators (lexicographic, ignore case, locale, integer, decimal comma, decimal dot, length; ascending and descending; stable), then implement
+- [ ] 13.4 Write tests for blank operations (trim trailing/leading/both, EOL to space, tab to space, space to tab all/leading), then implement
+- [ ] 13.5 Apply transforms to the selection or whole document as one undo step; keep selections sensible
+- [ ] 13.6 Indent / Outdent commands and Tab / Shift+Tab honouring the indent unit setting
+- [ ] 13.7 Comment / Uncomment (line and block) using each language's comment tokens
+- [ ] 13.8 Nested submenu support in the menu bar; add Edit > Convert Case to, Line Operations, Blank Operations, Indent, Comment/Uncomment, plus Cut/Copy/Paste/Delete entries
+- [ ] 13.9 End-to-end tests: Convert case, remove duplicate lines, sort lines, trim trailing space through the menu
+
+## 14. Bookmarked lines (spec: bookmark-lines)
+
+- [ ] 14.1 Write tests, then implement Copy / Cut / Remove / Remove Non-Bookmarked / Paste-replace / Inverse for bookmarked lines
+- [ ] 14.2 Add the Search > Bookmark submenu entries and an end-to-end test
+
+## 15. View options and indentation (spec: view-options)
+
+- [ ] 15.1 Add the Show All Characters setting: marks for spaces, tabs and LF / CRLF / CR line endings (CSS decorations, text untouched)
+- [ ] 15.2 Add tab width and use-tabs settings (Rust settings store, dialog, editor indentUnit/tabSize)
+- [ ] 15.3 View menu entries (Word Wrap, Show Whitespace, Show All Characters) and end-to-end tests
+
+## 16. Language detection (spec: language-detection)
+
+- [ ] 16.1 Write tests for content detection (JSON, XML, HTML, YAML, Java, prose, empty, bounded prefix), then implement
+- [ ] 16.2 Auto-apply to untitled / Normal-text documents after typing or pasting; never override a manual choice or a file extension
+- [ ] 16.3 Persist the "language chosen manually" flag in the session
+
+## 17. Code formatting and JSON extras (specs: code-formatting, json-tools)
+
+- [ ] 17.1 Add Prettier (standalone, lazily loaded) for JavaScript, TypeScript, HTML, CSS and YAML; formatter for XML; brace-based formatter for Java
+- [ ] 17.2 Write tests, then implement the format dispatcher: language to formatter, tab width, errors reported without modifying the text
+- [ ] 17.3 Format Document command (Edit > Format, Cmd/Ctrl+Alt+L) with auto-detect fallback and one undo step
+- [ ] 17.4 JSON extras: Pretty-print 2 spaces / 4 spaces / tabs, Sort Keys, Escape / Unescape string; JSON commands set the language to JSON for valid JSON
+- [ ] 17.5 End-to-end tests for each language formatter and the JSON menu

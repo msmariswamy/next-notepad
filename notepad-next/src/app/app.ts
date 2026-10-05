@@ -1,8 +1,12 @@
-import { EditorState } from "@codemirror/state";
+import { Compartment, EditorState } from "@codemirror/state";
+import { classHighlighter } from "@lezer/highlight";
+import { syntaxHighlighting } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
 import { isolateHistory } from "@codemirror/commands";
 import { createEditorState } from "../editor/createEditor";
 import { marksExtension } from "../editor/marks";
+import { exceedsLargeFileLimit } from "../files/limits";
+import { PLAIN_TEXT, detectLanguage, loadLanguageExtension } from "../lang/languages";
 import { DocumentManager, type LoadedFile } from "../docs/documentManager";
 import type { Ipc } from "../ipc";
 import { renderStatusBar } from "../statusbar";
@@ -21,6 +25,8 @@ export interface AppDeps {
   settings: SettingsSource;
   /** Called after quit prompts are resolved; used to flush the session snapshot. */
   onQuit?: () => Promise<void>;
+  /** Transient user-visible messages (toast). */
+  notify?: (message: string, kind: "info" | "error") => void;
 }
 
 /**
@@ -34,6 +40,9 @@ export class App {
   projectRoot: string | null = null;
   private states = new Map<string, EditorState>();
   private shownId: string | null = null;
+  private languageCompartment = new Compartment();
+  /** Language each tab's editor state is currently configured with. */
+  private appliedLanguage = new Map<string, string>();
 
   constructor(private deps: AppDeps) {
     this.manager = deps.manager;
@@ -52,6 +61,8 @@ export class App {
     return [
       ...settingsExtensions(this.deps.settings.get()),
       ...marksExtension(),
+      syntaxHighlighting(classHighlighter),
+      this.languageCompartment.of([]),
       EditorView.updateListener.of((u) => {
         const id = this.shownId;
         if (!id) return;
@@ -64,9 +75,11 @@ export class App {
   private render(): void {
     // Drop editor state for tabs that no longer exist.
     for (const id of this.states.keys()) if (!this.manager.get(id)) this.states.delete(id);
+    for (const id of this.appliedLanguage.keys()) if (!this.manager.get(id)) this.appliedLanguage.delete(id);
 
     const active = this.manager.active;
     if (active && active.id !== this.shownId) this.show(active.id, active.text);
+    if (active) void this.syncLanguage(active.id, active.language);
 
     renderTabBar(this.deps.tabsEl, this.manager, {
       onActivate: (id) => this.activateTab(id),
@@ -84,6 +97,22 @@ export class App {
     this.view.setState(state);
     // A stored state keeps the settings it was created under; bring it up to date.
     applyToView(this.view, this.deps.settings.get());
+  }
+
+  /** Load the grammar for a tab's language (async, cached) and reconfigure the editor if it changed. */
+  private async syncLanguage(id: string, language: string): Promise<void> {
+    if (this.appliedLanguage.get(id) === language) return;
+    const ext = await loadLanguageExtension(language);
+    // The tab may have been closed or switched to another language while the grammar loaded.
+    if (this.manager.get(id)?.language !== language || this.shownId !== id) return;
+    this.appliedLanguage.set(id, language);
+    this.view.dispatch({ effects: this.languageCompartment.reconfigure(ext) });
+  }
+
+  /** Resolves once the shown tab's highlighting matches its language (useful for tests). */
+  async languageReady(): Promise<void> {
+    const doc = this.manager.active;
+    if (doc) await this.syncLanguage(doc.id, doc.language);
   }
 
   private applySettings(): void {
@@ -135,8 +164,25 @@ export class App {
   async openFileDialog(): Promise<void> {
     const path = await this.deps.platform.pickOpenPath();
     if (!path) return;
-    const file = await this.deps.ipc.invoke<LoadedFile>("open_file", { path });
-    this.manager.openFile(path, file);
+    await this.openPath(path);
+  }
+
+  notify(message: string, kind: "info" | "error" = "info"): void {
+    this.deps.notify?.(message, kind);
+  }
+
+  /** Change the active tab's line ending (applied on save; the tab becomes modified). */
+  setEol(eol: "lf" | "crlf" | "cr"): void {
+    if (this.manager.activeId) this.manager.setEol(this.manager.activeId, eol);
+  }
+
+  /** Change the encoding the active tab will be saved with (the in-memory text is unchanged). */
+  setEncoding(encoding: string, bom = false): void {
+    if (this.manager.activeId) this.manager.setEncoding(this.manager.activeId, encoding, bom);
+  }
+
+  setLanguage(language: string): void {
+    if (this.manager.activeId) this.manager.setLanguage(this.manager.activeId, language);
   }
 
   async openFolder(): Promise<string | null> {
@@ -145,15 +191,32 @@ export class App {
     return root;
   }
 
-  /** Open a file by path (used by result navigation) and return its tab id. */
-  async openPath(path: string): Promise<string> {
+  /** Open a file by path and return its tab id, or null if the user declined the large-file warning. */
+  async openPath(path: string): Promise<string | null> {
     const existing = this.manager.docs.find((d) => d.path === path);
     if (existing) {
       this.manager.activate(existing.id);
       return existing.id;
     }
+    if (!(await this.confirmLargeFile(path))) return null;
     const file = await this.deps.ipc.invoke<LoadedFile>("open_file", { path });
-    return this.manager.openFile(path, file).id;
+    const doc = this.manager.openFile(path, file);
+    this.manager.setLanguage(doc.id, detectLanguage(path));
+    return doc.id;
+  }
+
+  /** Warn before loading a file above the large-file threshold; an unknown size never blocks opening. */
+  private async confirmLargeFile(path: string): Promise<boolean> {
+    let size: number;
+    try {
+      size = await this.deps.ipc.invoke<number>("file_size", { path });
+    } catch {
+      return true;
+    }
+    if (!exceedsLargeFileLimit(size, this.deps.settings.get().largeFileThresholdBytes)) return true;
+    const mb = (size / (1024 * 1024)).toFixed(1);
+    const name = path.split(/[\\/]/).pop();
+    return this.deps.platform.confirm(`"${name}" is ${mb} MB. Opening very large files can be slow. Open it anyway?`, "Open");
   }
 
   /** Select a match by 1-based line and UTF-16 column range within that line. */
@@ -169,19 +232,33 @@ export class App {
     return doc ? this.saveDoc(doc.id) : false;
   }
 
-  private async saveDoc(id: string): Promise<boolean> {
+  /** Save the active tab under a new path chosen in the save dialog. */
+  async saveAs(): Promise<boolean> {
+    const doc = this.manager.active;
+    return doc ? this.saveDoc(doc.id, true) : false;
+  }
+
+  private async saveDoc(id: string, forceDialog = false): Promise<boolean> {
     const doc = this.manager.get(id);
     if (!doc) return false;
-    const path = doc.path ?? (await this.deps.platform.pickSavePath(doc.title));
+    const path = (!forceDialog && doc.path) || (await this.deps.platform.pickSavePath(doc.title));
     if (!path) return false;
-    await this.deps.ipc.invoke("save_file_cmd", {
-      path,
-      text: doc.text,
-      encoding: doc.encoding,
-      bom: doc.bom,
-      eol: doc.eol,
-    });
+    try {
+      await this.deps.ipc.invoke("save_file_cmd", {
+        path,
+        text: doc.text,
+        encoding: doc.encoding,
+        bom: doc.bom,
+        eol: doc.eol,
+      });
+    } catch (e) {
+      // e.g. text that cannot be represented in the chosen encoding; the tab stays modified.
+      this.notify(`Could not save ${doc.title}: ${e}`, "error");
+      return false;
+    }
     this.manager.markSaved(id, path);
+    // A tab saved under a new name picks up that name's language unless the user chose one.
+    if (doc.language === PLAIN_TEXT) this.manager.setLanguage(id, detectLanguage(path));
     return true;
   }
 

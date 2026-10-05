@@ -6,4 +6,6 @@ export interface Platform {
   pickSavePath(suggestedName: string): Promise<string | null>;
   pickFolder(): Promise<string | null>;
   confirmUnsaved(title: string): Promise<UnsavedChoice>;
+  /** Generic OK / Cancel question. */
+  confirm(message: string, okLabel: string): Promise<boolean>;
 }

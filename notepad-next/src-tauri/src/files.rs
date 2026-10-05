@@ -133,6 +133,12 @@ pub fn save_file(path: &Path, text: &str, encoding: &str, bom: bool, eol: Eol) -
     atomic_write(path, &bytes)
 }
 
+/// Size in bytes, so the UI can warn before loading a very large file.
+#[tauri::command]
+pub fn file_size(path: String) -> Result<u64, String> {
+    fs::metadata(&path).map(|m| m.len()).map_err(|e| format!("{path}: {e}"))
+}
+
 #[tauri::command]
 pub fn open_file(path: String) -> Result<LoadedFile, String> {
     read_file(Path::new(&path))
@@ -274,6 +280,15 @@ mod tests {
         fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
         atomic_write(&path, b"new").unwrap();
         assert_eq!(fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o755);
+    }
+
+    #[test]
+    fn file_size_reports_bytes_and_errors_for_missing_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("f.txt");
+        fs::write(&path, b"12345").unwrap();
+        assert_eq!(file_size(path.to_string_lossy().into_owned()).unwrap(), 5);
+        assert!(file_size(dir.path().join("nope").to_string_lossy().into_owned()).is_err());
     }
 
     #[test]

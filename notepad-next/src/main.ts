@@ -12,8 +12,13 @@ import { renderResults } from "./search/resultsPanel";
 import { FilesSearchController } from "./search/filesSearch";
 import { tauriFilesApi } from "./search/tauriFilesApi";
 import { confirmDialog } from "./app/dialogs";
+import { installPalette } from "./lang/palette";
+import { createCommands } from "./app/commands";
+import { dispatchShortcut, renderMenuBar } from "./app/menuBar";
+import { createToaster } from "./app/toast";
 import { restoreSession } from "./session/snapshot";
 
+installPalette();
 const inTauri = "__TAURI_INTERNALS__" in window;
 const host = inTauri ? { ipc: tauriIpc, platform: tauriPlatform } : createBrowserHost();
 
@@ -34,6 +39,7 @@ const app = new App({
   ipc: host.ipc,
   settings,
   onQuit: () => session.flush(),
+  notify: createToaster(document.getElementById("toast")!),
 });
 app.start();
 session.start();
@@ -54,14 +60,6 @@ if (inTauri) {
 const finder = new FindController(app);
 const filesApi = inTauri ? tauriFilesApi : (host as ReturnType<typeof createBrowserHost>).filesApi;
 const filesSearch = new FilesSearchController(filesApi, host.ipc, () => settings.get().largeFileThresholdBytes);
-// Shortcuts have no message area; an invalid regex is reported by the dialog, so just ignore it here.
-const runQuietly = (fn: () => unknown) => {
-  try {
-    fn();
-  } catch (e) {
-    if (!(e instanceof SyntaxError)) throw e;
-  }
-};
 const resultsEl = document.getElementById("results")!;
 const showResults: Parameters<typeof openFindDialog>[0]["showResults"] = (outcome) =>
   renderResults(
@@ -99,19 +97,12 @@ const openFind = (tab: FindTab) =>
     tab,
   );
 
-// Temporary shortcuts until the native menu bar lands (task 2.7).
-window.addEventListener("keydown", (e) => {
-  const key = e.key.toLowerCase();
-  // F2 / Shift+F2 step through bookmarks like Notepad++; Cmd+F2 toggles one.
-  if (key === "f2" && !(e.metaKey || e.ctrlKey)) return void (e.preventDefault(), finder.gotoBookmark(e.shiftKey));
-  if (!(e.metaKey || e.ctrlKey)) return;
-  if (key === "f" && !e.shiftKey) (e.preventDefault(), openFind("find"));
-  else if (key === "h") (e.preventDefault(), openFind("replace"));
-  else if (key === "g") (e.preventDefault(), runQuietly(() => finder.findNext({ backward: e.shiftKey })));
-  else if (key === "f2") (e.preventDefault(), finder.toggleBookmarkAtCaret())
-  else if (key === ",") (e.preventDefault(), openSettingsDialog(settings));
-  else if (key === "s") (e.preventDefault(), void app.save());
-  else if (key === "o") (e.preventDefault(), void app.openFileDialog());
-  else if (key === "n") (e.preventDefault(), app.newTab());
-  else if (key === "w" && app.manager.activeId) (e.preventDefault(), void app.closeTab(app.manager.activeId));
+const commands = createCommands({
+  app,
+  finder,
+  settings,
+  openFind,
+  openSettings: () => openSettingsDialog(settings),
 });
+renderMenuBar(document.getElementById("menubar")!, commands);
+window.addEventListener("keydown", (e) => void dispatchShortcut(e, commands));

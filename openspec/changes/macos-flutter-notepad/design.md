@@ -124,8 +124,8 @@ Rust returns file contents (or streams them in chunks) for patterns flagged `nee
 **D8. Marks and bookmarks are CodeMirror extensions.**
 Marks use a `StateField` of decorations (five styles = five CSS classes); bookmarks use a gutter marker field. Both survive edits through CodeMirror's change mapping. "Clear marks" and "Purge for each search" are state effects.
 
-**D9. JSON tools run in the frontend with `JSON.parse` / `JSON.stringify`.**
-Pretty-print and minify parse then re-serialise (documented side effect: duplicate keys collapse and number formatting normalises). Validate reports line and column derived from the parser error position. Highlighting uses `@codemirror/lang-json`. Very large JSON may move to a Rust worker later.
+**D9. JSON tools run in the frontend with an in-house strict parser.**
+`JSON.parse` gives no error position in Safari/WKWebView, reorders integer-like keys and rounds big numbers, so `src/json/jsonTools.ts` parses RFC 8259 JSON itself, reports line and column of the first error, and prints from its own tree: number text, string escapes and key order are kept as written. Duplicate keys collapse (first position, last value), as in an object literal. Pretty-print and Minify are single undoable edits and never touch invalid JSON. Highlighting uses `@codemirror/lang-json`. Very large JSON may move to a Rust worker later.
 
 **D10. Encodings and line endings.**
 Detect on open (BOM, then UTF-8 validity, then fallback) in Rust with `encoding_rs`; the editor stores text as UTF-16/JS strings with the encoding and EOL held as per-document metadata for round-trip saving. The status bar shows both.

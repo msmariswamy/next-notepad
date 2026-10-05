@@ -3,6 +3,7 @@ import { createMockIpc, type MockIpc } from "../ipc";
 import { DocumentManager } from "../docs/documentManager";
 import { App } from "./app";
 import { DEFAULT_SETTINGS, type Settings } from "../settings/model";
+import { language } from "@codemirror/language";
 import type { Platform } from "./platform";
 
 let ipc: MockIpc;
@@ -36,6 +37,7 @@ beforeEach(() => {
     pickSavePath: vi.fn(async () => "/tmp/saved.txt"),
     pickFolder: vi.fn(async () => "/tmp/proj"),
     confirmUnsaved: vi.fn(async () => "cancel" as const),
+    confirm: vi.fn(async () => true),
   };
   settings = { ...DEFAULT_SETTINGS };
   build();
@@ -239,7 +241,7 @@ describe("project folder and result navigation", () => {
 
   it("opens a file by path and re-uses its tab the second time", async () => {
     const id = await app.openPath("/tmp/proj/a.txt");
-    expect(app.manager.get(id)!.title).toBe("a.txt");
+    expect(app.manager.get(id!)!.title).toBe("a.txt");
     const again = await app.openPath("/tmp/proj/a.txt");
     expect(again).toBe(id);
     expect(ipc.calls.filter((c) => c.command === "open_file").length).toBe(1);
@@ -255,5 +257,107 @@ describe("project folder and result navigation", () => {
     await app.openPath("/tmp/proj/a.txt");
     app.selectLineColumns(99, 0, 500);
     expect(app.getSelection().to).toBe(app.view.state.doc.length);
+  });
+});
+
+describe("language and highlighting", () => {
+  const langName = () => app.view.state.facet(language)?.name ?? null;
+
+  it("starts as plain text", async () => {
+    await app.languageReady();
+    expect(app.manager.active!.language).toBe("Normal text");
+    expect(langName()).toBeNull();
+  });
+
+  it("detects the language from the file name when a file is opened", async () => {
+    platform.pickOpenPath = vi.fn(async () => "/tmp/data.json");
+    await app.openFileDialog();
+    await app.languageReady();
+    expect(app.manager.active!.language).toBe("JSON");
+    expect(langName()).toBe("json");
+  });
+
+  it("lets the user pick a language for an untitled tab", async () => {
+    app.setLanguage("Rust");
+    await app.languageReady();
+    expect(langName()).toBe("rust");
+    app.setLanguage("Normal text");
+    await app.languageReady();
+    expect(langName()).toBeNull();
+  });
+
+  it("keeps each tab's language when switching", async () => {
+    app.setLanguage("JSON");
+    await app.languageReady();
+    app.newTab();
+    await app.languageReady();
+    expect(langName()).toBeNull();
+    app.activateTab(app.manager.docs[0].id);
+    await app.languageReady();
+    expect(langName()).toBe("json");
+  });
+
+  it("picks the language up when an untitled tab is first saved under a name", async () => {
+    platform.pickSavePath = vi.fn(async () => "/tmp/notes.md");
+    type("# hi");
+    await app.save();
+    await app.languageReady();
+    expect(app.manager.active!.language).toBe("Markdown");
+  });
+
+  it("does not override a language the user chose when saving", async () => {
+    platform.pickSavePath = vi.fn(async () => "/tmp/notes.md");
+    app.setLanguage("Rust");
+    await app.save();
+    expect(app.manager.active!.language).toBe("Rust");
+  });
+});
+
+describe("large file warning", () => {
+  const big = 60 * 1024 * 1024;
+  const withSize = (size: number | "unknown") => {
+    ipc = createMockIpc({
+      file_size: () => {
+        if (size === "unknown") throw new Error("no size");
+        return size;
+      },
+      open_file: () => ({ text: "x", encoding: "UTF-8", bom: false, eol: "lf" }),
+    });
+    build();
+  };
+
+  it("asks before opening a file above the threshold, and stops when declined", async () => {
+    withSize(big);
+    platform.confirm = vi.fn(async () => false);
+    expect(await app.openPath("/tmp/huge.log")).toBeNull();
+    expect(platform.confirm).toHaveBeenCalledWith(expect.stringContaining("60.0 MB"), "Open");
+    expect(ipc.calls.some((c) => c.command === "open_file")).toBe(false);
+  });
+
+  it("opens the file when the warning is accepted", async () => {
+    withSize(big);
+    platform.confirm = vi.fn(async () => true);
+    expect(await app.openPath("/tmp/huge.log")).not.toBeNull();
+  });
+
+  it("does not ask for a file below the threshold", async () => {
+    withSize(1024);
+    platform.confirm = vi.fn(async () => false);
+    expect(await app.openPath("/tmp/small.txt")).not.toBeNull();
+    expect(platform.confirm).not.toHaveBeenCalled();
+  });
+
+  it("uses the threshold from settings", async () => {
+    withSize(2 * 1024 * 1024);
+    settings = { ...DEFAULT_SETTINGS, largeFileThresholdBytes: 1024 * 1024 };
+    platform.confirm = vi.fn(async () => false);
+    expect(await app.openPath("/tmp/two-mb.txt")).toBeNull();
+  });
+
+  it("never blocks opening when the size cannot be determined", async () => {
+    withSize("unknown");
+    platform.confirm = vi.fn(async () => false);
+    expect(await app.openPath("/tmp/a.txt")).not.toBeNull();
+    expect(platform.confirm).not.toHaveBeenCalled();
   });
 });

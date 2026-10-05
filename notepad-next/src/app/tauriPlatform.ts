@@ -1,5 +1,5 @@
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { confirmUnsavedDialog } from "./dialogs";
+import { confirmDialog, confirmUnsavedDialog } from "./dialogs";
 import type { Platform } from "./platform";
 
 export const tauriPlatform: Platform = {
@@ -13,4 +13,5 @@ export const tauriPlatform: Platform = {
   },
   pickSavePath: (suggestedName) => save({ defaultPath: suggestedName }),
   confirmUnsaved: confirmUnsavedDialog,
+  confirm: confirmDialog,
 };

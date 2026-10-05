@@ -25,6 +25,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             ping,
             files::open_file,
+            files::file_size,
             files::save_file_cmd,
             settings::get_settings,
             settings::update_settings,
