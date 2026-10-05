@@ -86,17 +86,30 @@ Formatting parses and re-prints the JSON, so:
 
 `design/app-icon.svg` is the source. `node design/render-icon.mjs` renders `design/app-icon.png`, and `npx tauri icon design/app-icon.png` regenerates everything in `src-tauri/icons/`.
 
-## Releasing (macOS `.dmg` and Windows `.exe`)
+## Builds and releases
 
-Local build on your own machine: `npm run tauri build` (macOS gives `src-tauri/target/release/bundle/dmg/*.dmg`,
-Windows gives `bundle/nsis/*-setup.exe`). Each OS must be built on that OS.
+There are two GitHub Actions workflows (each OS is built on that OS; you can also build locally with `npm run tauri build`):
 
-To publish both from GitHub:
+**Test builds, automatic (`build-main`).** Every push to `main` that changes `notepad-next/` builds a macOS `.dmg` and a
+Windows `.exe`. Open the workflow run on the *Actions* tab and download the installers from **Artifacts** (kept 30 days).
+These are for trying the latest code; nothing is published and there is no version number.
 
-1. Bump `version` in `src-tauri/tauri.conf.json` (and `package.json`), commit and push.
-2. `git tag v0.1.0 && git push origin v0.1.0` (the tag must equal `v` + the app version, or the workflow stops).
-3. The `release-next-notepad` workflow builds a universal macOS `.dmg` (Apple Silicon + Intel) and a Windows NSIS installer,
-   runs the unit tests first, and attaches both to a **draft** GitHub Release. Review it, then press *Publish*.
+**Releases, deliberate (`release-next-notepad`).** One command bumps the version everywhere, commits and tags it:
+
+```bash
+cd notepad-next
+npm run release -- patch            # 0.1.0 -> 0.1.1   (or: minor, major, or an exact 1.2.3)
+npm run release -- minor --push     # also pushes the commit and the tag, which starts the build
+npm run release -- patch --dry-run  # only shows the new version
+```
+
+The script updates `tauri.conf.json`, `package.json`, `package-lock.json`, `Cargo.toml` and `Cargo.lock`, creates the
+commit `Release vX.Y.Z` and the tag `vX.Y.Z`, and refuses to run on a dirty working tree, off `main`, or if the tag exists.
+Without `--push`, finish with `git push origin main && git push origin vX.Y.Z`.
+
+Pushing the tag builds a universal macOS `.dmg` (Apple Silicon and Intel) and a Windows `.exe`, runs the unit tests first,
+and attaches both to a **draft** GitHub Release. Review it, then press **Publish release**. You can also run the workflow by
+hand from the Actions tab and type the tag.
 
 Unsigned builds work but show warnings (macOS Gatekeeper: right-click the app > Open; Windows SmartScreen: More info >
 Run anyway). To sign and notarize the macOS build, add the `APPLE_*` repository secrets listed (commented) in

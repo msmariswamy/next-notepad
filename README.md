@@ -26,7 +26,8 @@ Close the app and your unsaved tabs come back exactly as you left them.
 
 ## Download
 
-Get the latest installer from the [Releases](../../releases) page:
+Get the latest installer from the [Releases](../../releases) page (every push to `main` also produces test builds under
+[Actions](../../actions/workflows/build-main.yml) > Artifacts):
 
 | Platform | File |
 |---|---|
@@ -46,6 +47,7 @@ cd notepad-next
 npm install
 npm run tauri dev      # run the desktop app
 npm run tauri build    # build the installer for your OS
+npm run release -- patch   # bump the version, commit and tag a release
 ```
 
 More detail, shortcuts and the release process are in [`notepad-next/README.md`](notepad-next/README.md).
