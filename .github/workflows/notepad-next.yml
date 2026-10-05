@@ -1,0 +1,45 @@
+name: notepad-next
+
+on:
+  push:
+    paths: ["notepad-next/**", ".github/workflows/notepad-next.yml"]
+  pull_request:
+    paths: ["notepad-next/**", ".github/workflows/notepad-next.yml"]
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: notepad-next
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: notepad-next/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: notepad-next/src-tauri
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: cargo test
+        working-directory: notepad-next/src-tauri
+      - run: npm run tauri build -- --debug --no-bundle
