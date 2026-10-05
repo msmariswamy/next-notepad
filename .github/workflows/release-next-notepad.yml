@@ -1,0 +1,91 @@
+name: release-next-notepad
+
+# Push a tag like v0.1.0 to build a universal macOS .dmg and a Windows .exe installer
+# and attach them to a DRAFT GitHub Release. You review the draft, then publish it.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to create or update (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    runs-on: ubuntu-22.04
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: tag
+        run: echo "tag=${{ github.event.inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+      # A release whose tag and app version disagree is confusing for users, so fail early.
+      - name: Tag must match the app version in tauri.conf.json
+        run: |
+          app_version=$(node -p "require('./notepad-next/src-tauri/tauri.conf.json').version")
+          tag="${{ steps.tag.outputs.tag }}"
+          if [ "v${app_version}" != "${tag}" ]; then
+            echo "Tag ${tag} does not match tauri.conf.json version v${app_version}"; exit 1
+          fi
+
+  build:
+    needs: check-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            args: "--target universal-apple-darwin --bundles dmg"
+            rust_targets: "aarch64-apple-darwin,x86_64-apple-darwin"
+          - os: windows-latest
+            args: "--bundles nsis"
+            rust_targets: ""
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: notepad-next/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: notepad-next/src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: notepad-next
+
+      - name: Run the unit tests before packaging
+        run: npm test
+        working-directory: notepad-next
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # --- macOS signing and notarization (optional; unsigned builds still work but trigger Gatekeeper) ---
+          # Add these repository secrets, then the app is signed and notarized automatically:
+          # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}                 # base64 of the Developer ID .p12
+          # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}       # "Developer ID Application: Your Name (TEAMID)"
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}                       # app-specific password
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          projectPath: notepad-next
+          tagName: ${{ needs.check-version.outputs.tag }}
+          releaseName: "next-notepad ${{ needs.check-version.outputs.tag }}"
+          releaseBody: "Download the .dmg (macOS, Apple Silicon and Intel) or the -setup.exe (Windows). Builds are unsigned unless signing secrets are configured: on macOS right-click the app and choose Open the first time; on Windows choose More info > Run anyway."
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
