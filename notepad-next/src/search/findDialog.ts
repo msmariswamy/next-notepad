@@ -1,6 +1,7 @@
 import type { SearchMode } from "./regexCompat";
 import type { FindController, SearchOutcome } from "./findController";
 import { SearchHistory } from "./history";
+import type { FilesOutcome, FilesSearchController, Where } from "./filesSearch";
 import { dialogOpacity, type TransparencySettings } from "./transparency";
 
 export type FindTab = "find" | "replace" | "files" | "projects" | "mark";
@@ -18,6 +19,12 @@ export interface FindDialogDeps {
   /** Selected text to prefill "Find what" with (single-line selections only). */
   selectionText(): string;
   showResults(outcome: SearchOutcome): void;
+  files: FilesSearchController;
+  /** Current project root (set by "Open Folder"), or null. */
+  projectRoot(): string | null;
+  openFolder(): Promise<string | null>;
+  pickFolder(): Promise<string | null>;
+  confirmReplace(fileCount: number): Promise<boolean>;
 }
 
 export interface FindDialogHandle {
@@ -231,6 +238,102 @@ function buildDialog(deps: FindDialogDeps, initialTab: FindTab): FindDialogHandl
   markButtons.append(markAllBtn, clearMarksBtn, clearBookmarksBtn);
   markPanel.append(el("div", { className: "find-grid" }, markChecks, styleGroup), markButtons);
 
+  // ---- Find in Files / Find in Projects tabs
+  const filesPanels = new Map<FindTab, HTMLElement>();
+  const rootInputs = new Map<FindTab, () => string | null>();
+  for (const kind of ["files", "projects"] as const) {
+    const panel = el("div", { className: `find-panel find-panel-${kind}` });
+    const filters = el("input", { type: "text", name: `${kind}Filters`, value: "*.*" });
+    const recursive = el("input", { type: "checkbox", name: `${kind}Recursive`, checked: true });
+    const hidden = el("input", { type: "checkbox", name: `${kind}Hidden`, checked: false });
+    const sub = el("label", { className: "find-check" });
+    sub.append(recursive, el("span", { textContent: "In all sub-folders" }));
+    const hid = el("label", { className: "find-check" });
+    hid.append(hidden, el("span", { textContent: "In hidden folders" }));
+
+    let getRoot: () => string | null;
+    const rootRow = el("div", { className: "find-row" });
+    const dirInput = el("input", { type: "text", name: "directory", placeholder: "Folder to search" });
+    const rootLabel = el("span", { className: "project-root" });
+    rootLabel.setAttribute("data-testid", "project-root");
+    const folderBtn = btn(kind === "files" ? "Browse…" : "Open Folder…", async () => {
+      if (kind === "files") {
+        const picked = await deps.pickFolder();
+        if (picked) dirInput.value = picked;
+      } else {
+        await deps.openFolder();
+        refreshProject();
+      }
+    });
+    if (kind === "files") {
+      rootRow.append(el("span", { textContent: "Directory:" }), dirInput, folderBtn);
+      getRoot = () => dirInput.value.trim() || null;
+    } else {
+      rootRow.append(el("span", { textContent: "Project:" }), rootLabel, folderBtn);
+      getRoot = () => deps.projectRoot();
+    }
+    rootInputs.set(kind, getRoot);
+    const filterRow = labelled("Filters:", filters);
+
+    const where = (): Where | null => {
+      const root = getRoot();
+      if (!root) {
+        say(kind === "files" ? "Enter a directory to search." : "Open a folder to search the project.", true);
+        return null;
+      }
+      return { root, filters: filters.value.trim() || "*.*", recursive: recursive.checked, includeHidden: hidden.checked };
+    };
+    const render = (o: FilesOutcome) => {
+      deps.showResults(o);
+      say(o.summary);
+    };
+    const cancelBtn = btn("Cancel", () => void deps.files.cancel());
+    cancelBtn.hidden = true;
+    const findAllBtn = btn("Find All", async () => {
+      sync();
+      const w = where();
+      if (!w) return;
+      if (st.pattern === "") return say("Enter text to find.", true);
+      cancelBtn.hidden = false;
+      say("Searching…");
+      try {
+        render(await deps.files.find({ pattern: st.pattern, replacement: st.replacement, opts: st.opts }, w, render));
+      } catch (e) {
+        if (e instanceof SyntaxError) say(`Invalid regular expression: ${e.message}`, true);
+        else say(String(e), true);
+      } finally {
+        cancelBtn.hidden = true;
+      }
+    }, `files-find-all`);
+    const replaceFilesBtn = btn(kind === "files" ? "Replace in Files" : "Replace in Project", async () => {
+      sync();
+      const w = where();
+      if (!w) return;
+      if (st.pattern === "") return say("Enter text to find.", true);
+      try {
+        const r = await deps.files.replaceInFiles({ pattern: st.pattern, replacement: st.replacement, opts: st.opts }, w, deps.confirmReplace);
+        say(r.status === "cancelled" ? "Replace in Files: nothing changed" : `Replace in Files: ${r.replacements} occurrence${r.replacements === 1 ? "" : "s"} replaced in ${r.files} file${r.files === 1 ? "" : "s"}`);
+      } catch (e) {
+        say(e instanceof SyntaxError ? `Invalid regular expression: ${e.message}` : String(e), true);
+      }
+    });
+    const buttons = el("div", { className: "find-buttons" });
+    buttons.append(findAllBtn, replaceFilesBtn, cancelBtn);
+
+    const disableables = [findAllBtn, replaceFilesBtn, filters, recursive, hidden];
+    const refreshProject = () => {
+      if (kind !== "projects") return;
+      const root = deps.projectRoot();
+      rootLabel.textContent = root ?? "No folder opened — use Open Folder…";
+      disableables.forEach((c) => (c.disabled = root === null));
+    };
+    refreshProject();
+    panel.dataset.panel = kind;
+    panel.append(rootRow, filterRow, el("div", { className: "find-options" }, sub, hid), buttons);
+    (panel as HTMLElement & { refresh?: () => void }).refresh = refreshProject;
+    filesPanels.set(kind, panel);
+  }
+
   // ---- transparency
   const transparency: TransparencySettings = { enabled: false, mode: "blur", level: 70 };
   let focused = true;
@@ -268,11 +371,7 @@ function buildDialog(deps: FindDialogDeps, initialTab: FindTab): FindDialogHandl
   // ---- panels for later tabs
   const panels = new Map<FindTab, HTMLElement>();
   panels.set("mark", markPanel);
-  for (const t of ["files", "projects"] as FindTab[]) {
-    const p = el("div", { className: `find-panel find-panel-${t}` });
-    p.dataset.panel = t;
-    panels.set(t, p);
-  }
+  for (const [t, p] of filesPanels) panels.set(t, p);
 
   const main = el("div", { className: "find-main" });
   main.append(findRow, replaceRow, el("div", { className: "find-grid" }, options, modeGroup), tGroup);
@@ -280,12 +379,12 @@ function buildDialog(deps: FindDialogDeps, initialTab: FindTab): FindDialogHandl
 
   function setTab(tab: FindTab) {
     for (const [id, b] of tabButtons) b.classList.toggle("active", id === tab);
-    const simple = tab === "find" || tab === "replace" || tab === "mark";
     dialog.dataset.tab = tab;
-    main.hidden = !simple;
+    main.hidden = false;
     findButtons.hidden = tab !== "find";
     replaceButtons.hidden = tab !== "replace";
-    replaceRow.hidden = tab !== "replace";
+    replaceRow.hidden = !(tab === "replace" || tab === "files" || tab === "projects");
+    (panels.get(tab) as (HTMLElement & { refresh?: () => void }) | undefined)?.refresh?.();
     for (const [id, p] of panels) p.hidden = id !== tab;
     say("");
   }

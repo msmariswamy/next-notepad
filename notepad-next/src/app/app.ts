@@ -30,6 +30,8 @@ export interface AppDeps {
 export class App {
   readonly manager: DocumentManager;
   readonly view: EditorView;
+  /** Folder opened with "Open Folder"; Find in Projects searches it. */
+  projectRoot: string | null = null;
   private states = new Map<string, EditorState>();
   private shownId: string | null = null;
 
@@ -135,6 +137,30 @@ export class App {
     if (!path) return;
     const file = await this.deps.ipc.invoke<LoadedFile>("open_file", { path });
     this.manager.openFile(path, file);
+  }
+
+  async openFolder(): Promise<string | null> {
+    const root = await this.deps.platform.pickFolder();
+    if (root) this.projectRoot = root;
+    return root;
+  }
+
+  /** Open a file by path (used by result navigation) and return its tab id. */
+  async openPath(path: string): Promise<string> {
+    const existing = this.manager.docs.find((d) => d.path === path);
+    if (existing) {
+      this.manager.activate(existing.id);
+      return existing.id;
+    }
+    const file = await this.deps.ipc.invoke<LoadedFile>("open_file", { path });
+    return this.manager.openFile(path, file).id;
+  }
+
+  /** Select a match by 1-based line and UTF-16 column range within that line. */
+  selectLineColumns(line: number, start: number, end: number): void {
+    const doc = this.view.state.doc;
+    const l = doc.line(Math.min(Math.max(line, 1), doc.lines));
+    this.setSelection({ from: Math.min(l.from + start, l.to), to: Math.min(l.from + end, l.to) });
   }
 
   /** Save the active tab; returns false when the user cancels the save dialog. */

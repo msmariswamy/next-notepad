@@ -1,4 +1,5 @@
 import type { App } from "../app/app";
+import { hitsFor, type ResultLine } from "./resultLines";
 import type { Query, Range } from "./searchService";
 import { countMatches, findAll, findNext, planReplaceAll, planReplaceCurrent } from "./searchService";
 import { addBookmarks, addMarks, clearBookmarks, clearMarks, neighbourBookmark, toggleBookmark } from "../editor/marks";
@@ -22,16 +23,11 @@ export const DEFAULT_FIND_STATE: FindState = {
   inSelection: false,
 };
 
-export interface ResultLine {
-  line: number;
-  text: string;
-  from: number;
-  to: number;
-}
-
 export interface DocResults {
   docId: string;
   title: string;
+  /** Set for results from Find in Files / Projects. */
+  path?: string;
   hits: ResultLine[];
 }
 
@@ -39,32 +35,6 @@ export interface SearchOutcome {
   /** User-visible one-line summary, e.g. 'Search "x" (3 hits in 2 files)'. */
   summary: string;
   results: DocResults[];
-}
-
-function lineStarts(text: string): number[] {
-  const starts = [0];
-  for (let i = text.indexOf("\n"); i >= 0; i = text.indexOf("\n", i + 1)) starts.push(i + 1);
-  return starts;
-}
-
-function lineOf(starts: number[], offset: number): number {
-  let lo = 0;
-  let hi = starts.length - 1;
-  while (lo < hi) {
-    const mid = (lo + hi + 1) >> 1;
-    if (starts[mid] <= offset) lo = mid;
-    else hi = mid - 1;
-  }
-  return lo;
-}
-
-function hitsFor(text: string, ranges: Range[]): ResultLine[] {
-  const starts = lineStarts(text);
-  return ranges.map((r) => {
-    const i = lineOf(starts, r.from);
-    const end = i + 1 < starts.length ? starts[i + 1] - 1 : text.length;
-    return { line: i + 1, text: text.slice(starts[i], end), from: r.from, to: r.to };
-  });
 }
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;

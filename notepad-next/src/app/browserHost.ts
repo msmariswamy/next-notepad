@@ -1,13 +1,15 @@
 import { createMockIpc, type Ipc } from "../ipc";
 import { DEFAULT_SETTINGS } from "../settings/model";
 import { confirmUnsavedDialog } from "./dialogs";
+import type { FilesApi } from "../search/filesSearch";
+import { createMemoryFilesApi } from "../search/memoryFilesApi";
 import type { Platform } from "./platform";
 
 /**
  * Host used when running outside Tauri (Vite dev server, Playwright). Files live
  * in memory and paths come from window.prompt, so UI flows can be exercised in WebKit.
  */
-export function createBrowserHost(): { ipc: Ipc; platform: Platform } {
+export function createBrowserHost(): { ipc: Ipc; platform: Platform; filesApi: FilesApi } {
   const files = new Map<string, string>();
   let settings = { ...DEFAULT_SETTINGS };
   const ipc = createMockIpc({
@@ -35,7 +37,10 @@ export function createBrowserHost(): { ipc: Ipc; platform: Platform } {
   const platform: Platform = {
     pickOpenPath: async () => window.prompt("Open path") || null,
     pickSavePath: async (name) => window.prompt("Save as", `/memory/${name}`) || null,
+    pickFolder: async () => window.prompt("Open folder", "/memory") || null,
     confirmUnsaved: confirmUnsavedDialog,
   };
-  return { ipc, platform };
+  // Test hook: lets e2e tests seed the in-memory file system.
+  (window as unknown as { __memoryFiles: Map<string, string> }).__memoryFiles = files;
+  return { ipc, platform, filesApi: createMemoryFilesApi(files) };
 }

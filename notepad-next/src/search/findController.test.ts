@@ -16,7 +16,7 @@ beforeEach(() => {
     tabsEl: document.getElementById("tabs")!,
     statusEl: document.getElementById("status")!,
     manager: new DocumentManager(),
-    platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(), confirmUnsaved: vi.fn() },
+    platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(), pickFolder: vi.fn(), confirmUnsaved: vi.fn() },
     ipc: createMockIpc({}),
     settings: { get: () => DEFAULT_SETTINGS, subscribe: () => () => {} },
   });

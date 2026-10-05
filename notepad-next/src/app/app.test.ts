@@ -34,6 +34,7 @@ beforeEach(() => {
   platform = {
     pickOpenPath: vi.fn(async () => "/tmp/opened.txt"),
     pickSavePath: vi.fn(async () => "/tmp/saved.txt"),
+    pickFolder: vi.fn(async () => "/tmp/proj"),
     confirmUnsaved: vi.fn(async () => "cancel" as const),
   };
   settings = { ...DEFAULT_SETTINGS };
@@ -219,5 +220,40 @@ describe("editing helpers used by Find/Replace", () => {
     expect(app.manager.get(firstId)!.dirty).toBe(true);
     app.activateTab(firstId);
     expect(app.view.state.doc.toString()).toBe("FIRST");
+  });
+});
+
+describe("project folder and result navigation", () => {
+  it("remembers the folder chosen with Open Folder", async () => {
+    expect(app.projectRoot).toBeNull();
+    expect(await app.openFolder()).toBe("/tmp/proj");
+    expect(app.projectRoot).toBe("/tmp/proj");
+  });
+
+  it("keeps the previous folder when the picker is cancelled", async () => {
+    await app.openFolder();
+    platform.pickFolder = vi.fn(async () => null);
+    await app.openFolder();
+    expect(app.projectRoot).toBe("/tmp/proj");
+  });
+
+  it("opens a file by path and re-uses its tab the second time", async () => {
+    const id = await app.openPath("/tmp/proj/a.txt");
+    expect(app.manager.get(id)!.title).toBe("a.txt");
+    const again = await app.openPath("/tmp/proj/a.txt");
+    expect(again).toBe(id);
+    expect(ipc.calls.filter((c) => c.command === "open_file").length).toBe(1);
+  });
+
+  it("selects a match by line and column", async () => {
+    await app.openPath("/tmp/proj/a.txt"); // mock returns "from disk"
+    app.selectLineColumns(1, 5, 9);
+    expect(app.getSelection()).toEqual({ from: 5, to: 9 });
+  });
+
+  it("clamps a column beyond the end of the line", async () => {
+    await app.openPath("/tmp/proj/a.txt");
+    app.selectLineColumns(99, 0, 500);
+    expect(app.getSelection().to).toBe(app.view.state.doc.length);
   });
 });

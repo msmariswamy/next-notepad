@@ -1,10 +1,11 @@
-import type { SearchOutcome } from "./findController";
+import type { DocResults, SearchOutcome } from "./findController";
+import type { ResultLine } from "./resultLines";
 
 /** Bottom results panel listing hits grouped by document; a click jumps to the match. */
 export function renderResults(
   el: HTMLElement,
   outcome: SearchOutcome,
-  onSelect: (docId: string, from: number, to: number) => void,
+  onSelect: (doc: DocResults, hit: ResultLine) => void,
   onClose: () => void,
 ): void {
   el.hidden = false;
@@ -30,8 +31,7 @@ export function renderResults(
       const row = document.createElement("div");
       row.className = "results-hit";
       row.textContent = `Line ${hit.line}: ${hit.text}`;
-      row.addEventListener("dblclick", () => onSelect(doc.docId, hit.from, hit.to));
-      row.addEventListener("click", () => onSelect(doc.docId, hit.from, hit.to));
+      row.addEventListener("click", () => onSelect(doc, hit));
       body.append(row);
     }
   }

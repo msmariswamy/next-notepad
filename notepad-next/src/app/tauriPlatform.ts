@@ -7,6 +7,10 @@ export const tauriPlatform: Platform = {
     const picked = await open({ multiple: false, directory: false });
     return typeof picked === "string" ? picked : null;
   },
+  async pickFolder() {
+    const picked = await open({ multiple: false, directory: true });
+    return typeof picked === "string" ? picked : null;
+  },
   pickSavePath: (suggestedName) => save({ defaultPath: suggestedName }),
   confirmUnsaved: confirmUnsavedDialog,
 };

@@ -9,6 +9,9 @@ import { SessionClient } from "./session/client";
 import { FindController } from "./search/findController";
 import { openFindDialog, type FindTab } from "./search/findDialog";
 import { renderResults } from "./search/resultsPanel";
+import { FilesSearchController } from "./search/filesSearch";
+import { tauriFilesApi } from "./search/tauriFilesApi";
+import { confirmDialog } from "./app/dialogs";
 import { restoreSession } from "./session/snapshot";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -49,6 +52,8 @@ if (inTauri) {
 }
 
 const finder = new FindController(app);
+const filesApi = inTauri ? tauriFilesApi : (host as ReturnType<typeof createBrowserHost>).filesApi;
+const filesSearch = new FilesSearchController(filesApi, host.ipc, () => settings.get().largeFileThresholdBytes);
 // Shortcuts have no message area; an invalid regex is reported by the dialog, so just ignore it here.
 const runQuietly = (fn: () => unknown) => {
   try {
@@ -62,9 +67,15 @@ const showResults: Parameters<typeof openFindDialog>[0]["showResults"] = (outcom
   renderResults(
     resultsEl,
     outcome,
-    (docId, from, to) => {
-      app.activateTab(docId);
-      app.setSelection({ from, to });
+    async (doc, hit) => {
+      if (doc.path && hit.col) {
+        // Find in Files result: open the file, then jump to the line and columns.
+        await app.openPath(doc.path);
+        app.selectLineColumns(hit.line, hit.col.start, hit.col.end);
+      } else {
+        app.activateTab(doc.docId);
+        app.setSelection({ from: hit.from, to: hit.to });
+      }
       app.view.focus();
     },
     () => (resultsEl.hidden = true),
@@ -79,6 +90,11 @@ const openFind = (tab: FindTab) =>
         return text.includes("\n") ? "" : text;
       },
       showResults,
+      files: filesSearch,
+      projectRoot: () => app.projectRoot,
+      openFolder: () => app.openFolder(),
+      pickFolder: () => host.platform.pickFolder(),
+      confirmReplace: (n) => confirmDialog(`Replace in ${n} file${n === 1 ? "" : "s"}? This writes to disk.`, "Replace"),
     },
     tab,
   );

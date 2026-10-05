@@ -25,12 +25,12 @@ describe("results panel", () => {
     expect([...el.querySelectorAll(".results-hit")].map((r) => r.textContent)).toEqual(["Line 1: a one", "Line 3: a three"]);
   });
 
-  it("navigates to the match when a hit is double-clicked", () => {
+  it("navigates to the match when a hit is clicked", () => {
     const el = document.createElement("div");
     const onSelect = vi.fn();
     renderResults(el, outcome, onSelect, vi.fn());
-    (el.querySelectorAll(".results-hit")[1] as HTMLElement).dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
-    expect(onSelect).toHaveBeenCalledWith("doc-1", 10, 11);
+    (el.querySelectorAll(".results-hit")[1] as HTMLElement).click();
+    expect(onSelect).toHaveBeenCalledWith(outcome.results[0], outcome.results[0].hits[1]);
   });
 
   it("calls onClose from the close button", () => {

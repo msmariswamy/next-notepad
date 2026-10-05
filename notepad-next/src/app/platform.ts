@@ -4,5 +4,6 @@ export type UnsavedChoice = "save" | "discard" | "cancel";
 export interface Platform {
   pickOpenPath(): Promise<string | null>;
   pickSavePath(suggestedName: string): Promise<string | null>;
+  pickFolder(): Promise<string | null>;
   confirmUnsaved(title: string): Promise<UnsavedChoice>;
 }

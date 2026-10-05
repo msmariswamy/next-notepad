@@ -53,3 +53,5 @@ dialog.find-dialog { position: fixed; right: 24px; bottom: 48px; left: auto; top
 .cm-bookmark-gutter { width: 14px; }
 .cm-bookmark { color: #1c7ed6; cursor: pointer; font-size: 10px; }
 [hidden] { display: none !important; }
+.project-root { flex: 1; font-family: ui-monospace, Menlo, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left !important; width: auto !important; }
+.find-panel { margin: 4px 0; }

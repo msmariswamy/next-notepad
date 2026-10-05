@@ -75,11 +75,11 @@
 
 - [x] 9.1 Write Rust tests for the directory walker (filters, sub-folders, hidden folders, binary and unreadable skipping), then implement
 - [x] 9.2 Implement the Rust search engine for eligible patterns with streaming results and cancellation
-- [ ] 9.3 Implement the JS-fallback path: Rust streams file contents, frontend matches; shared result shape with tests for identical positions
-- [ ] 9.4 Implement the Find in Files tab (directory, filters, toggles) and the streaming results panel
-- [ ] 9.5 Implement Replace in Files with a confirmation showing the affected file count
-- [ ] 9.6 Implement Open Folder and the Find in Projects tab (disabled until a folder is opened)
-- [ ] 9.7 End-to-end test: search a fixture directory with a lookahead pattern and a plain pattern
+- [x] 9.3 Implement the JS-fallback path: Rust streams file contents, frontend matches; shared result shape with tests for identical positions
+- [x] 9.4 Implement the Find in Files tab (directory, filters, toggles) and the streaming results panel
+- [x] 9.5 Implement Replace in Files with a confirmation showing the affected file count
+- [x] 9.6 Implement Open Folder and the Find in Projects tab (disabled until a folder is opened)
+- [x] 9.7 End-to-end test: search a fixture directory with a lookahead pattern and a plain pattern
 
 ## 10. JSON tools (spec: json-tools)
 
