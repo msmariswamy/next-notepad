@@ -1,3 +1,8 @@
+export interface ClipboardApi {
+  readText(): Promise<string>;
+  writeText(text: string): Promise<void>;
+}
+
 export type UnsavedChoice = "save" | "discard" | "cancel";
 
 /** Native services the app needs. Faked in unit/e2e tests; backed by Tauri in the real app. */
@@ -8,4 +13,5 @@ export interface Platform {
   confirmUnsaved(title: string): Promise<UnsavedChoice>;
   /** Generic OK / Cancel question. */
   confirm(message: string, okLabel: string): Promise<boolean>;
+  clipboard: ClipboardApi;
 }

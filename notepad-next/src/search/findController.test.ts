@@ -1,3 +1,4 @@
+import { memoryClipboard } from "../app/clipboard";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../app/app";
 import { createMockIpc } from "../ipc";
@@ -16,7 +17,7 @@ beforeEach(() => {
     tabsEl: document.getElementById("tabs")!,
     statusEl: document.getElementById("status")!,
     manager: new DocumentManager(),
-    platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(), pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn() },
+    platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(), pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn(), clipboard: memoryClipboard() },
     ipc: createMockIpc({}),
     settings: { get: () => DEFAULT_SETTINGS, subscribe: () => () => {} },
   });

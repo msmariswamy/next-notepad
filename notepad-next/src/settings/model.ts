@@ -8,6 +8,11 @@ export interface Settings {
   fontSize: number;
   wordWrap: boolean;
   showWhitespace: boolean;
+  /** Marks spaces, tabs and line endings. */
+  showAllCharacters: boolean;
+  tabWidth: number;
+  /** Tab key inserts a tab character instead of spaces. */
+  useTabs: boolean;
   largeFileThresholdBytes: number;
 }
 
@@ -18,11 +23,16 @@ export const DEFAULT_SETTINGS: Settings = {
   fontSize: 13,
   wordWrap: false,
   showWhitespace: false,
+  showAllCharacters: false,
+  tabWidth: 4,
+  useTabs: false,
   largeFileThresholdBytes: 50 * 1024 * 1024,
 };
 
 export const MIN_FONT_SIZE = 8;
 export const MAX_FONT_SIZE = 72;
+export const MIN_TAB_WIDTH = 1;
+export const MAX_TAB_WIDTH = 16;
 
 /** Clamp user input into a safe range so a typo cannot make the editor unusable. */
 export function sanitizeSettings(s: Settings): Settings {
@@ -30,6 +40,7 @@ export function sanitizeSettings(s: Settings): Settings {
   return {
     ...s,
     fontSize: Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, size)),
+    tabWidth: Number.isFinite(s.tabWidth) ? Math.min(MAX_TAB_WIDTH, Math.max(MIN_TAB_WIDTH, Math.round(s.tabWidth))) : DEFAULT_SETTINGS.tabWidth,
     largeFileThresholdBytes:
       s.largeFileThresholdBytes > 0 ? Math.round(s.largeFileThresholdBytes) : DEFAULT_SETTINGS.largeFileThresholdBytes,
   };

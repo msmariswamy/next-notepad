@@ -9,7 +9,8 @@ import {
   lineNumbers,
   rectangularSelection,
 } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { indentLess, tabIndent } from "../edit/indent";
 import { bracketMatching, codeFolding, foldGutter, foldKeymap, indentOnInput } from "@codemirror/language";
 
 /**
@@ -31,7 +32,7 @@ export function coreExtensions(): Extension[] {
     foldGutter(),
     rectangularSelection(),
     crosshairCursor(),
-    keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap, indentWithTab]),
+    keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap, { key: "Tab", run: tabIndent, shift: indentLess }]),
   ];
 }
 

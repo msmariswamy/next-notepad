@@ -105,26 +105,26 @@
 
 ## 13. Text transforms (spec: text-transforms)
 
-- [ ] 13.1 Write tests for pure case converters (upper, lower, proper, proper blend, sentence, sentence blend, invert, random), then implement
-- [ ] 13.2 Write tests for pure line operations (duplicate, remove duplicates, remove consecutive duplicates, split, join, move up/down, remove empty, insert blank, reverse, randomize), then implement
-- [ ] 13.3 Write tests for the sort comparators (lexicographic, ignore case, locale, integer, decimal comma, decimal dot, length; ascending and descending; stable), then implement
-- [ ] 13.4 Write tests for blank operations (trim trailing/leading/both, EOL to space, tab to space, space to tab all/leading), then implement
-- [ ] 13.5 Apply transforms to the selection or whole document as one undo step; keep selections sensible
-- [ ] 13.6 Indent / Outdent commands and Tab / Shift+Tab honouring the indent unit setting
-- [ ] 13.7 Comment / Uncomment (line and block) using each language's comment tokens
-- [ ] 13.8 Nested submenu support in the menu bar; add Edit > Convert Case to, Line Operations, Blank Operations, Indent, Comment/Uncomment, plus Cut/Copy/Paste/Delete entries
-- [ ] 13.9 End-to-end tests: Convert case, remove duplicate lines, sort lines, trim trailing space through the menu
+- [x] 13.1 Write tests for pure case converters (upper, lower, proper, proper blend, sentence, sentence blend, invert, random), then implement
+- [x] 13.2 Write tests for pure line operations (duplicate, remove duplicates, remove consecutive duplicates, split, join, move up/down, remove empty, insert blank, reverse, randomize), then implement
+- [x] 13.3 Write tests for the sort comparators (lexicographic, ignore case, locale, integer, decimal comma, decimal dot, length; ascending and descending; stable), then implement
+- [x] 13.4 Write tests for blank operations (trim trailing/leading/both, EOL to space, tab to space, space to tab all/leading), then implement
+- [x] 13.5 Apply transforms to the selection or whole document as one undo step; keep selections sensible
+- [x] 13.6 Indent / Outdent commands and Tab / Shift+Tab honouring the indent unit setting
+- [x] 13.7 Comment / Uncomment (line and block) using each language's comment tokens
+- [x] 13.8 Nested submenu support in the menu bar; add Edit > Convert Case to, Line Operations, Blank Operations, Indent, Comment/Uncomment, plus Cut/Copy/Paste/Delete entries
+- [x] 13.9 End-to-end tests: Convert case, remove duplicate lines, sort lines, trim trailing space through the menu
 
 ## 14. Bookmarked lines (spec: bookmark-lines)
 
-- [ ] 14.1 Write tests, then implement Copy / Cut / Remove / Remove Non-Bookmarked / Paste-replace / Inverse for bookmarked lines
-- [ ] 14.2 Add the Search > Bookmark submenu entries and an end-to-end test
+- [x] 14.1 Write tests, then implement Copy / Cut / Remove / Remove Non-Bookmarked / Paste-replace / Inverse for bookmarked lines
+- [x] 14.2 Add the Search > Bookmark submenu entries and an end-to-end test
 
 ## 15. View options and indentation (spec: view-options)
 
-- [ ] 15.1 Add the Show All Characters setting: marks for spaces, tabs and LF / CRLF / CR line endings (CSS decorations, text untouched)
-- [ ] 15.2 Add tab width and use-tabs settings (Rust settings store, dialog, editor indentUnit/tabSize)
-- [ ] 15.3 View menu entries (Word Wrap, Show Whitespace, Show All Characters) and end-to-end tests
+- [x] 15.1 Add the Show All Characters setting: marks for spaces, tabs and LF / CRLF / CR line endings (CSS decorations, text untouched)
+- [x] 15.2 Add tab width and use-tabs settings (Rust settings store, dialog, editor indentUnit/tabSize)
+- [x] 15.3 View menu entries (Word Wrap, Show Whitespace, Show All Characters) and end-to-end tests
 
 ## 16. Language detection (spec: language-detection)
 

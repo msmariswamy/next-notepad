@@ -1,3 +1,4 @@
+import { memoryClipboard } from "../app/clipboard";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockIpc, type MockIpc } from "../ipc";
 import { DocumentManager } from "../docs/documentManager";
@@ -38,6 +39,7 @@ beforeEach(() => {
     pickFolder: vi.fn(async () => "/tmp/proj"),
     confirmUnsaved: vi.fn(async () => "cancel" as const),
     confirm: vi.fn(async () => true),
+    clipboard: memoryClipboard(),
   };
   settings = { ...DEFAULT_SETTINGS };
   build();

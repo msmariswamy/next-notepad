@@ -26,6 +26,11 @@ pub struct Settings {
     pub font_size: u32,
     pub word_wrap: bool,
     pub show_whitespace: bool,
+    /// Marks spaces, tabs and line endings (superset of show_whitespace).
+    pub show_all_characters: bool,
+    pub tab_width: u32,
+    /// Tab key inserts a tab character instead of spaces.
+    pub use_tabs: bool,
     pub large_file_threshold_bytes: u64,
 }
 
@@ -38,6 +43,9 @@ impl Default for Settings {
             font_size: 13,
             word_wrap: false,
             show_whitespace: false,
+            show_all_characters: false,
+            tab_width: 4,
+            use_tabs: false,
             large_file_threshold_bytes: 50 * 1024 * 1024,
         }
     }
@@ -96,6 +104,7 @@ mod tests {
         let s = Settings::default();
         assert!(!s.silent_close, "silentClose defaults to off");
         assert_eq!(s.theme, Theme::System);
+        assert_eq!((s.tab_width, s.use_tabs, s.show_all_characters), (4, false, false));
         assert_eq!(s.large_file_threshold_bytes, 50 * 1024 * 1024);
     }
 
@@ -122,6 +131,9 @@ mod tests {
         let text = fs::read_to_string(&path).unwrap();
         assert!(text.contains("\"silentClose\""));
         assert!(text.contains("\"fontSize\""));
+        assert!(text.contains("\"tabWidth\""));
+        assert!(text.contains("\"showAllCharacters\""));
+        assert!(text.contains("\"useTabs\""));
     }
 
     #[test]

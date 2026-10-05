@@ -18,7 +18,7 @@ export function openSettingsDialog(store: SettingsStore): HTMLDialogElement {
     l.append(span, control);
     return l;
   };
-  const checkbox = (key: "silentClose" | "wordWrap" | "showWhitespace") => {
+  const checkbox = (key: "silentClose" | "wordWrap" | "showWhitespace" | "showAllCharacters" | "useTabs") => {
     const i = document.createElement("input");
     i.type = "checkbox";
     i.name = key;
@@ -60,6 +60,9 @@ export function openSettingsDialog(store: SettingsStore): HTMLDialogElement {
     row("Font size", number("fontSize", s.fontSize, (fontSize) => ({ fontSize }))),
     row("Word wrap", checkbox("wordWrap")),
     row("Show whitespace", checkbox("showWhitespace")),
+    row("Show all characters (spaces, tabs, line endings)", checkbox("showAllCharacters")),
+    row("Tab width", number("tabWidth", s.tabWidth, (tabWidth) => ({ tabWidth }))),
+    row("Insert a tab character (instead of spaces)", checkbox("useTabs")),
     row(
       "Large-file warning (MB)",
       number("largeFileMb", Math.round(s.largeFileThresholdBytes / MB), (mb) => ({

@@ -12,6 +12,13 @@ describe("settings model", () => {
     expect(sanitizeSettings({ ...DEFAULT_SETTINGS, fontSize: 16.4 }).fontSize).toBe(16);
   });
 
+  it("clamps tab width to 1-16 and defaults to 4 spaces", () => {
+    expect(DEFAULT_SETTINGS).toMatchObject({ tabWidth: 4, useTabs: false, showAllCharacters: false });
+    expect(sanitizeSettings({ ...DEFAULT_SETTINGS, tabWidth: 0 }).tabWidth).toBe(1);
+    expect(sanitizeSettings({ ...DEFAULT_SETTINGS, tabWidth: 99 }).tabWidth).toBe(16);
+    expect(sanitizeSettings({ ...DEFAULT_SETTINGS, tabWidth: NaN }).tabWidth).toBe(4);
+  });
+
   it("replaces a NaN font size with the default", () => {
     expect(sanitizeSettings({ ...DEFAULT_SETTINGS, fontSize: NaN }).fontSize).toBe(DEFAULT_SETTINGS.fontSize);
   });

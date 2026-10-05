@@ -43,6 +43,7 @@ export class App {
   private languageCompartment = new Compartment();
   /** Language each tab's editor state is currently configured with. */
   private appliedLanguage = new Map<string, string>();
+  private appliedEol = new Map<string, string>();
 
   constructor(private deps: AppDeps) {
     this.manager = deps.manager;
@@ -59,7 +60,7 @@ export class App {
 
   private editorExtensions() {
     return [
-      ...settingsExtensions(this.deps.settings.get()),
+      ...settingsExtensions(this.deps.settings.get(), this.manager.active?.eol ?? "lf"),
       ...marksExtension(),
       syntaxHighlighting(classHighlighter),
       this.languageCompartment.of([]),
@@ -80,6 +81,11 @@ export class App {
     const active = this.manager.active;
     if (active && active.id !== this.shownId) this.show(active.id, active.text);
     if (active) void this.syncLanguage(active.id, active.language);
+    // The line-ending marker text follows the tab's EOL, so refresh it when that changes.
+    if (active && this.appliedEol.get(active.id) !== active.eol) {
+      this.appliedEol.set(active.id, active.eol);
+      applyToView(this.view, this.deps.settings.get(), active.eol);
+    }
 
     renderTabBar(this.deps.tabsEl, this.manager, {
       onActivate: (id) => this.activateTab(id),
@@ -96,7 +102,7 @@ export class App {
     this.shownId = id;
     this.view.setState(state);
     // A stored state keeps the settings it was created under; bring it up to date.
-    applyToView(this.view, this.deps.settings.get());
+    applyToView(this.view, this.deps.settings.get(), this.manager.active?.eol ?? "lf");
   }
 
   /** Load the grammar for a tab's language (async, cached) and reconfigure the editor if it changed. */
@@ -118,7 +124,7 @@ export class App {
   private applySettings(): void {
     const dark = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches;
     applyToDocument(document.documentElement, this.deps.settings.get(), dark);
-    applyToView(this.view, this.deps.settings.get());
+    applyToView(this.view, this.deps.settings.get(), this.manager.active?.eol ?? "lf");
   }
 
   private renderStatus(): void {
@@ -165,6 +171,10 @@ export class App {
     const path = await this.deps.platform.pickOpenPath();
     if (!path) return;
     await this.openPath(path);
+  }
+
+  get clipboard() {
+    return this.deps.platform.clipboard;
   }
 
   notify(message: string, kind: "info" | "error" = "info"): void {

@@ -1,3 +1,4 @@
+import { memoryClipboard } from "../app/clipboard";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { undo } from "@codemirror/commands";
 import { App } from "../app/app";
@@ -17,7 +18,7 @@ beforeEach(() => {
     tabsEl: document.getElementById("tabs")!,
     statusEl: document.getElementById("status")!,
     manager: new DocumentManager(),
-    platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(), pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn() },
+    platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(), pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn(), clipboard: memoryClipboard() },
     ipc: createMockIpc({}),
     settings: { get: () => DEFAULT_SETTINGS, subscribe: () => () => {} },
     notify,
@@ -104,7 +105,7 @@ describe("encoding, line ending and save-as helpers", () => {
       tabsEl: document.getElementById("tabs")!,
       statusEl: document.getElementById("status")!,
       manager: new DocumentManager(),
-      platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(async () => "/x.txt"), pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn() },
+      platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(async () => "/x.txt"), pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn(), clipboard: memoryClipboard() },
       ipc,
       settings: { get: () => DEFAULT_SETTINGS, subscribe: () => () => {} },
     });
@@ -122,7 +123,7 @@ describe("encoding, line ending and save-as helpers", () => {
       tabsEl: document.getElementById("tabs")!,
       statusEl: document.getElementById("status")!,
       manager: new DocumentManager(),
-      platform: { pickOpenPath: vi.fn(), pickSavePath: pick, pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn() },
+      platform: { pickOpenPath: vi.fn(), pickSavePath: pick, pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn(), clipboard: memoryClipboard() },
       ipc,
       settings: { get: () => DEFAULT_SETTINGS, subscribe: () => () => {} },
     });
@@ -140,7 +141,7 @@ describe("encoding, line ending and save-as helpers", () => {
       tabsEl: document.getElementById("tabs")!,
       statusEl: document.getElementById("status")!,
       manager: new DocumentManager(),
-      platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(async () => "/x.txt"), pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn() },
+      platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(async () => "/x.txt"), pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn(), clipboard: memoryClipboard() },
       ipc: createMockIpc({ save_file_cmd: () => { throw new Error("not representable"); } }),
       settings: { get: () => DEFAULT_SETTINGS, subscribe: () => () => {} },
       notify: errors,

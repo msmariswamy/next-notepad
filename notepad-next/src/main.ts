@@ -105,4 +105,5 @@ const commands = createCommands({
   openSettings: () => openSettingsDialog(settings),
 });
 renderMenuBar(document.getElementById("menubar")!, commands);
-window.addEventListener("keydown", (e) => void dispatchShortcut(e, commands));
+// Capture phase, so app shortcuts win over CodeMirror's default keymap for the same key.
+window.addEventListener("keydown", (e) => void dispatchShortcut(e, commands), true);

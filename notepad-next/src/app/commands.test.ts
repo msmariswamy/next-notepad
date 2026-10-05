@@ -1,3 +1,4 @@
+import { memoryClipboard } from "../app/clipboard";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./app";
 import { DocumentManager } from "../docs/documentManager";
@@ -5,7 +6,7 @@ import { createMockIpc } from "../ipc";
 import { DEFAULT_SETTINGS } from "../settings/model";
 import { SettingsStore } from "../settings/store";
 import { FindController } from "../search/findController";
-import { MENU, createCommands, type Command } from "./commands";
+import { MENU, createCommands, menuIds, type Command } from "./commands";
 import { dispatchShortcut, renderMenuBar } from "./menuBar";
 import { createToaster } from "./toast";
 
@@ -27,7 +28,7 @@ beforeEach(async () => {
     tabsEl: document.getElementById("tabs")!,
     statusEl: document.getElementById("status")!,
     manager: new DocumentManager(),
-    platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(async () => "/x.txt"), pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn() },
+    platform: { pickOpenPath: vi.fn(), pickSavePath: vi.fn(async () => "/x.txt"), pickFolder: vi.fn(), confirmUnsaved: vi.fn(), confirm: vi.fn(), clipboard: memoryClipboard() },
     ipc: createMockIpc({ save_file_cmd: () => undefined }),
     settings,
     notify,
@@ -40,7 +41,7 @@ beforeEach(async () => {
 describe("command registry", () => {
   it("defines every command id the menu refers to", () => {
     const ids = new Set(commands.map((c) => c.id));
-    for (const menu of MENU) for (const id of menu.items) if (id !== "-") expect(ids.has(id), id).toBe(true);
+    for (const id of menuIds()) expect(ids.has(id), id).toBe(true);
   });
 
   it("has unique ids and no accelerator used twice", () => {
@@ -191,6 +192,13 @@ describe("keyboard shortcuts", () => {
     expect(app.manager.docs.length).toBe(2);
   });
 
+  it("stops propagation so the editor's own keymap does not also run it", () => {
+    const e = key({ key: "n", metaKey: true });
+    const stop = vi.spyOn(e, "stopPropagation");
+    dispatchShortcut(e, commands);
+    expect(stop).toHaveBeenCalled();
+  });
+
   it("leaves native editing shortcuts to the editor", () => {
     const e = key({ key: "a", metaKey: true });
     expect(dispatchShortcut(e, commands)).toBe(false);
@@ -237,5 +245,115 @@ describe("toast", () => {
     expect(el.hidden).toBe(false);
     expect(el.className).toBe("toast error");
     vi.useRealTimers();
+  });
+});
+
+describe("Edit and Search submenus (Notepad++ layout)", () => {
+  const nav = () => document.getElementById("menubar")!;
+  const title = (name: string) => [...nav().querySelectorAll(".menu-title")].find((t) => t.textContent === name) as HTMLElement;
+  const submenu = (name: string) => nav().querySelector(`[data-submenu="${name}"]`) as HTMLElement;
+
+  it("Edit lists clipboard commands and the five submenus", () => {
+    renderMenuBar(nav(), commands);
+    title("Edit").click();
+    const top = [...nav().querySelector(".menu.open .menu-dropdown")!.children]
+      .filter((c) => c.classList.contains("menu-item") || c.classList.contains("menu-submenu"))
+      .map((c) => (c.querySelector(".menu-label") as HTMLElement).textContent);
+    expect(top).toEqual(["Undo", "Redo", "Cut", "Copy", "Paste", "Delete", "Select All", "Convert Case to", "Line Operations", "Blank Operations", "Indent", "Comment/Uncomment"]);
+  });
+
+  it("hovering a submenu opens it to the side and lists its commands", () => {
+    renderMenuBar(nav(), commands);
+    title("Edit").click();
+    submenu("Convert Case to").dispatchEvent(new MouseEvent("mouseenter"));
+    const labels = [...submenu("Convert Case to").parentElement!.querySelectorAll(".menu-nested .menu-label")].map((l) => l.textContent);
+    expect(labels).toEqual(["UPPERCASE", "lowercase", "Proper Case", "Proper Case (blend)", "Sentence case", "Sentence case (blend)", "iNVERT cASE", "ranDOm CasE"]);
+  });
+
+  it("Line Operations has every operation and all fourteen sort commands", () => {
+    renderMenuBar(nav(), commands);
+    title("Edit").click();
+    submenu("Line Operations").dispatchEvent(new MouseEvent("mouseenter"));
+    const labels = [...submenu("Line Operations").parentElement!.querySelectorAll(".menu-nested .menu-label")].map((l) => l.textContent!);
+    for (const l of ["Duplicate Current Line", "Remove Duplicate Lines", "Remove Consecutive Duplicate Lines", "Split Lines", "Join Lines", "Move Up Current Line", "Move Down Current Line", "Remove Empty Lines", "Remove Empty Lines (Containing Blank characters)", "Insert Blank Line Above Current", "Insert Blank Line Below Current", "Reverse Line Order", "Randomize Line Order"]) {
+      expect(labels).toContain(l);
+    }
+    expect(labels.filter((l) => l.startsWith("Sort Lines")).length).toBe(14);
+    expect(labels).toContain("Sort Lines As Decimals (Comma) Descending");
+  });
+
+  it("Blank Operations lists the eight blank commands", () => {
+    renderMenuBar(nav(), commands);
+    title("Edit").click();
+    submenu("Blank Operations").dispatchEvent(new MouseEvent("mouseenter"));
+    const labels = [...submenu("Blank Operations").parentElement!.querySelectorAll(".menu-nested .menu-label")].map((l) => l.textContent);
+    expect(labels).toEqual(["Trim Trailing Space", "Trim Leading Space", "Trim Leading and Trailing Space", "EOL to Space", "Trim both and EOL to Space", "TAB to Space", "Space to TAB (All)", "Space to TAB (Leading)"]);
+  });
+
+  it("Search > Bookmark lists the bookmarked-line commands", () => {
+    renderMenuBar(nav(), commands);
+    title("Search").click();
+    submenu("Bookmark").dispatchEvent(new MouseEvent("mouseenter"));
+    const labels = [...submenu("Bookmark").parentElement!.querySelectorAll(".menu-nested .menu-label")].map((l) => l.textContent);
+    expect(labels).toEqual(["Toggle Bookmark", "Next Bookmark", "Previous Bookmark", "Clear All Bookmarks", "Cut Bookmarked Lines", "Copy Bookmarked Lines", "Paste to (Replace) Bookmarked Lines", "Remove Bookmarked Lines", "Remove Non-Bookmarked Lines", "Inverse Bookmarks"]);
+  });
+
+  it("running a submenu item executes it and closes the whole menu", () => {
+    app.view.dispatch({ changes: { from: 0, insert: "b\na\nb" } });
+    renderMenuBar(nav(), commands);
+    title("Edit").click();
+    submenu("Line Operations").dispatchEvent(new MouseEvent("mouseenter"));
+    (nav().querySelector('[data-command="line.removeDuplicates"]') as HTMLElement).click();
+    expect(app.view.state.doc.toString()).toBe("b\na");
+    expect(nav().querySelector(".menu.open")).toBeNull();
+  });
+
+  it("opening one submenu closes its sibling", () => {
+    renderMenuBar(nav(), commands);
+    title("Edit").click();
+    submenu("Convert Case to").dispatchEvent(new MouseEvent("mouseenter"));
+    submenu("Blank Operations").dispatchEvent(new MouseEvent("mouseenter"));
+    const open = [...nav().querySelectorAll(".menu-nested")].filter((n) => !(n as HTMLElement).hidden);
+    expect(open.length).toBe(1);
+  });
+
+  it("View has Word Wrap, Show Whitespace and Show All Characters", () => {
+    renderMenuBar(nav(), commands);
+    title("View").click();
+    const labels = [...nav().querySelectorAll(".menu.open .menu-label")].map((l) => l.textContent);
+    expect(labels.slice(0, 3)).toEqual(["Word Wrap", "Show Whitespace", "Show All Characters"]);
+  });
+});
+
+describe("Edit commands via the registry", () => {
+  it("Convert Case > UPPERCASE with a shortcut", () => {
+    app.view.dispatch({ changes: { from: 0, insert: "abc" }, selection: { anchor: 0, head: 3 } });
+    dispatchShortcut(new KeyboardEvent("keydown", { key: "U", metaKey: true, shiftKey: true, cancelable: true }), commands);
+    expect(app.view.state.doc.toString()).toBe("ABC");
+  });
+
+  it("Show All Characters toggles through settings and is checked", async () => {
+    await cmd("view.showAllCharacters").run();
+    expect(cmd("view.showAllCharacters").checked!()).toBe(true);
+  });
+
+  it("Delete removes the character after the caret", () => {
+    app.view.dispatch({ changes: { from: 0, insert: "abc" }, selection: { anchor: 1 } });
+    void cmd("edit.delete").run();
+    expect(app.view.state.doc.toString()).toBe("ac");
+  });
+
+  it("Cut and Paste go through the clipboard", async () => {
+    app.view.dispatch({ changes: { from: 0, insert: "hello" }, selection: { anchor: 0, head: 5 } });
+    await cmd("edit.cut").run();
+    expect(app.view.state.doc.toString()).toBe("");
+    await cmd("edit.paste").run();
+    expect(app.view.state.doc.toString()).toBe("hello");
+  });
+
+  it("Copy leaves the text in place", async () => {
+    app.view.dispatch({ changes: { from: 0, insert: "hi" }, selection: { anchor: 0, head: 2 } });
+    await cmd("edit.copy").run();
+    expect(app.view.state.doc.toString()).toBe("hi");
   });
 });

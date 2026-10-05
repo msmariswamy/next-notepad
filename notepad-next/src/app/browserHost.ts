@@ -4,6 +4,7 @@ import { confirmDialog, confirmUnsavedDialog } from "./dialogs";
 import type { FilesApi } from "../search/filesSearch";
 import { createMemoryFilesApi } from "../search/memoryFilesApi";
 import type { Platform } from "./platform";
+import { memoryClipboard } from "./clipboard";
 
 /**
  * Host used when running outside Tauri (Vite dev server, Playwright). Files live
@@ -41,6 +42,7 @@ export function createBrowserHost(): { ipc: Ipc; platform: Platform; filesApi: F
     pickFolder: async () => window.prompt("Open folder", "/memory") || null,
     confirmUnsaved: confirmUnsavedDialog,
     confirm: confirmDialog,
+    clipboard: memoryClipboard(),
   };
   // Test hook: lets e2e tests seed the in-memory file system.
   (window as unknown as { __memoryFiles: Map<string, string> }).__memoryFiles = files;

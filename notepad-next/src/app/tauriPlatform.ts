@@ -1,6 +1,7 @@
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { confirmDialog, confirmUnsavedDialog } from "./dialogs";
 import type { Platform } from "./platform";
+import { webClipboard } from "./clipboard";
 
 export const tauriPlatform: Platform = {
   async pickOpenPath() {
@@ -14,4 +15,5 @@ export const tauriPlatform: Platform = {
   pickSavePath: (suggestedName) => save({ defaultPath: suggestedName }),
   confirmUnsaved: confirmUnsavedDialog,
   confirm: confirmDialog,
+  clipboard: webClipboard,
 };

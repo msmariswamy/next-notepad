@@ -69,3 +69,6 @@ dialog.find-dialog { position: fixed; right: 24px; bottom: 48px; left: auto; top
 #toast { position: fixed; left: 50%; bottom: 36px; transform: translateX(-50%); z-index: 60; padding: 6px 14px; border-radius: 6px; font-size: 12px; box-shadow: 0 4px 14px #0004; }
 #toast.info { background: #2b8a3e; color: #fff; }
 #toast.error { background: #c92a2a; color: #fff; }
+.cm-eol { color: #868e96; font-size: 0.75em; margin-left: 2px; user-select: none; pointer-events: none; }
+.menu-submenu { position: relative; }
+.menu-nested { left: 100%; top: -4px; }

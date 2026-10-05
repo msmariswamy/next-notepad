@@ -1,4 +1,7 @@
-import { redo, selectAll, undo } from "@codemirror/commands";
+import { deleteCharForward, redo, selectAll, undo } from "@codemirror/commands";
+import { BookmarkOps } from "../edit/bookmarkOps";
+import { EditOps } from "../edit/editOps";
+import type { CaseMode, SortKind } from "../edit/transforms";
 import type { App } from "./app";
 import { LANGUAGES } from "../lang/languages";
 import { runJsonCommand } from "../json/jsonCommands";
@@ -42,11 +45,42 @@ const quietly = (fn: () => unknown) => {
   }
 };
 
+const CASES: { id: string; label: string; mode: CaseMode; accelerator?: string }[] = [
+  { id: "case.upper", label: "UPPERCASE", mode: "upper", accelerator: "Mod+Shift+U" },
+  { id: "case.lower", label: "lowercase", mode: "lower", accelerator: "Mod+U" },
+  { id: "case.proper", label: "Proper Case", mode: "proper" },
+  { id: "case.properBlend", label: "Proper Case (blend)", mode: "properBlend" },
+  { id: "case.sentence", label: "Sentence case", mode: "sentence" },
+  { id: "case.sentenceBlend", label: "Sentence case (blend)", mode: "sentenceBlend" },
+  { id: "case.invert", label: "iNVERT cASE", mode: "invert" },
+  { id: "case.random", label: "ranDOm CasE", mode: "random" },
+];
+
+const SORTS: { kind: SortKind; label: string }[] = [
+  { kind: "lex", label: "Lexicographically" },
+  { kind: "lexIgnoreCase", label: "Lex. Ignoring Case" },
+  { kind: "locale", label: "In Locale Order" },
+  { kind: "integer", label: "As Integers" },
+  { kind: "decimalComma", label: "As Decimals (Comma)" },
+  { kind: "decimalDot", label: "As Decimals (Dot)" },
+  { kind: "length", label: "By Length" },
+];
+
 export function createCommands(ctx: CommandContext): Command[] {
   const { app, finder, settings } = ctx;
+  const edit = new EditOps(app, () => settings.get().tabWidth);
+  const bookmarks = new BookmarkOps(app);
+  const clip = async (fn: () => Promise<unknown>) => {
+    try {
+      await fn();
+    } catch (e) {
+      app.notify(`Clipboard unavailable: ${e}`, "error");
+    }
+  };
+  const selectedText = () => app.view.state.sliceDoc(app.getSelection().from, app.getSelection().to);
   const doc = () => app.manager.active;
   const activeId = () => app.manager.activeId;
-  const toggle = (key: "wordWrap" | "showWhitespace") => () => void settings.update({ [key]: !settings.get()[key] });
+  const toggle = (key: "wordWrap" | "showWhitespace" | "showAllCharacters") => () => void settings.update({ [key]: !settings.get()[key] });
 
   return [
     // File
@@ -59,6 +93,27 @@ export function createCommands(ctx: CommandContext): Command[] {
     // Edit
     { id: "edit.undo", label: "Undo", accelerator: "Mod+Z", native: true, run: () => void undo(app.view) },
     { id: "edit.redo", label: "Redo", accelerator: "Mod+Shift+Z", native: true, run: () => void redo(app.view) },
+    {
+      id: "edit.cut",
+      label: "Cut",
+      accelerator: "Mod+X",
+      native: true,
+      run: () => clip(async () => {
+        const text = selectedText();
+        if (!text) return;
+        await app.clipboard.writeText(text);
+        app.view.dispatch(app.view.state.replaceSelection(""));
+      }),
+    },
+    { id: "edit.copy", label: "Copy", accelerator: "Mod+C", native: true, run: () => clip(async () => void (selectedText() && (await app.clipboard.writeText(selectedText())))) },
+    {
+      id: "edit.paste",
+      label: "Paste",
+      accelerator: "Mod+V",
+      native: true,
+      run: () => clip(async () => app.view.dispatch(app.view.state.replaceSelection((await app.clipboard.readText()).replace(/\r\n?/g, "\n")))),
+    },
+    { id: "edit.delete", label: "Delete", native: true, run: () => void deleteCharForward(app.view) },
     { id: "edit.selectAll", label: "Select All", accelerator: "Mod+A", native: true, run: () => void selectAll(app.view) },
     // Search
     { id: "search.find", label: "Find…", accelerator: "Mod+F", run: () => ctx.openFind("find") },
@@ -72,10 +127,51 @@ export function createCommands(ctx: CommandContext): Command[] {
     { id: "bookmark.next", label: "Next Bookmark", accelerator: "F2", run: () => void finder.gotoBookmark(false) },
     { id: "bookmark.prev", label: "Previous Bookmark", accelerator: "Shift+F2", run: () => void finder.gotoBookmark(true) },
     { id: "bookmark.clear", label: "Clear All Bookmarks", run: () => finder.clearBookmarks() },
+    { id: "bm.cut", label: "Cut Bookmarked Lines", run: () => void bookmarks.cut() },
+    { id: "bm.copy", label: "Copy Bookmarked Lines", run: () => void bookmarks.copy() },
+    { id: "bm.paste", label: "Paste to (Replace) Bookmarked Lines", run: () => void bookmarks.pasteReplace() },
+    { id: "bm.remove", label: "Remove Bookmarked Lines", run: () => void bookmarks.removeBookmarked() },
+    { id: "bm.removeNon", label: "Remove Non-Bookmarked Lines", run: () => void bookmarks.removeNonBookmarked() },
+    { id: "bm.inverse", label: "Inverse Bookmarks", run: () => bookmarks.inverse() },
     { id: "marks.clear", label: "Clear All Marks", run: () => finder.clearMarks() },
+    // Edit: Convert Case, Line Operations, Blank Operations, Indent, Comment
+    ...CASES.map((c) => ({ id: c.id, label: c.label, accelerator: c.accelerator, run: () => void edit.convertCase(c.mode) })),
+    { id: "line.duplicate", label: "Duplicate Current Line", accelerator: "Mod+Shift+D", run: () => void edit.duplicateLine() },
+    { id: "line.removeDuplicates", label: "Remove Duplicate Lines", run: () => void edit.removeDuplicateLines() },
+    { id: "line.removeConsecutive", label: "Remove Consecutive Duplicate Lines", run: () => void edit.removeConsecutiveDuplicateLines() },
+    { id: "line.split", label: "Split Lines", run: () => void edit.splitLines() },
+    { id: "line.join", label: "Join Lines", accelerator: "Mod+J", run: () => void edit.joinLines() },
+    { id: "line.moveUp", label: "Move Up Current Line", accelerator: "Alt+ArrowUp", native: true, run: () => void edit.moveLineUp() },
+    { id: "line.moveDown", label: "Move Down Current Line", accelerator: "Alt+ArrowDown", native: true, run: () => void edit.moveLineDown() },
+    { id: "line.removeEmpty", label: "Remove Empty Lines", run: () => void edit.removeEmptyLines() },
+    { id: "line.removeEmptyBlank", label: "Remove Empty Lines (Containing Blank characters)", run: () => void edit.removeEmptyLinesWithBlanks() },
+    { id: "line.insertAbove", label: "Insert Blank Line Above Current", accelerator: "Mod+Alt+Enter", run: () => void edit.insertBlankLine("above") },
+    { id: "line.insertBelow", label: "Insert Blank Line Below Current", accelerator: "Mod+Alt+Shift+Enter", run: () => void edit.insertBlankLine("below") },
+    { id: "line.reverse", label: "Reverse Line Order", run: () => void edit.reverseLines() },
+    { id: "line.randomize", label: "Randomize Line Order", run: () => void edit.randomizeLines() },
+    ...SORTS.flatMap((x) =>
+      (["asc", "desc"] as const).map((dir) => ({
+        id: `sort.${x.kind}.${dir}`,
+        label: `Sort Lines ${x.label} ${dir === "asc" ? "Ascending" : "Descending"}`,
+        run: () => void edit.sort(x.kind, dir),
+      })),
+    ),
+    { id: "blank.trimTrailing", label: "Trim Trailing Space", run: () => void edit.trimTrailing() },
+    { id: "blank.trimLeading", label: "Trim Leading Space", run: () => void edit.trimLeading() },
+    { id: "blank.trimBoth", label: "Trim Leading and Trailing Space", run: () => void edit.trimBoth() },
+    { id: "blank.eolToSpace", label: "EOL to Space", run: () => void edit.eolToSpace() },
+    { id: "blank.trimBothEol", label: "Trim both and EOL to Space", run: () => void edit.trimBothAndEol() },
+    { id: "blank.tabToSpace", label: "TAB to Space", run: () => void edit.tabToSpace() },
+    { id: "blank.spaceToTabAll", label: "Space to TAB (All)", run: () => void edit.spaceToTabAll() },
+    { id: "blank.spaceToTabLeading", label: "Space to TAB (Leading)", run: () => void edit.spaceToTabLeading() },
+    { id: "indent.more", label: "Indent", accelerator: "Mod+]", run: () => void edit.indent() },
+    { id: "indent.less", label: "Outdent", accelerator: "Mod+[", run: () => void edit.outdent() },
+    { id: "comment.line", label: "Toggle Single Line Comment", accelerator: "Mod+/", run: () => void edit.toggleLineComment() },
+    { id: "comment.block", label: "Toggle Block Comment", run: () => void edit.toggleBlockComment() },
     // View
     { id: "view.wordWrap", label: "Word Wrap", run: toggle("wordWrap"), checked: () => settings.get().wordWrap },
     { id: "view.showWhitespace", label: "Show Whitespace", run: toggle("showWhitespace"), checked: () => settings.get().showWhitespace },
+    { id: "view.showAllCharacters", label: "Show All Characters", run: toggle("showAllCharacters"), checked: () => settings.get().showAllCharacters },
     ...(["system", "light", "dark"] as Theme[]).map((t) => ({
       id: `view.theme.${t}`,
       label: `Theme: ${t[0].toUpperCase()}${t.slice(1)}`,
@@ -108,21 +204,84 @@ export function createCommands(ctx: CommandContext): Command[] {
   ];
 }
 
+export type MenuItem = string | "-" | { label: string; items: MenuItem[] };
+
 export interface MenuModel {
   label: string;
-  items: (string | "-")[];
+  items: MenuItem[];
 }
+
+const sorts = (dir: "asc" | "desc") => SORTS.map((x) => `sort.${x.kind}.${dir}`);
 
 export const MENU: MenuModel[] = [
   { label: "File", items: ["file.new", "file.open", "file.openFolder", "-", "file.save", "file.saveAs", "-", "file.closeTab"] },
-  { label: "Edit", items: ["edit.undo", "edit.redo", "-", "edit.selectAll"] },
+  {
+    label: "Edit",
+    items: [
+      "edit.undo",
+      "edit.redo",
+      "-",
+      "edit.cut",
+      "edit.copy",
+      "edit.paste",
+      "edit.delete",
+      "edit.selectAll",
+      "-",
+      { label: "Convert Case to", items: CASES.map((c) => c.id) },
+      {
+        label: "Line Operations",
+        items: [
+          "line.duplicate",
+          "line.removeDuplicates",
+          "line.removeConsecutive",
+          "line.split",
+          "line.join",
+          "line.moveUp",
+          "line.moveDown",
+          "line.removeEmpty",
+          "line.removeEmptyBlank",
+          "line.insertAbove",
+          "line.insertBelow",
+          "line.reverse",
+          "line.randomize",
+          "-",
+          ...sorts("asc"),
+          "-",
+          ...sorts("desc"),
+        ],
+      },
+      {
+        label: "Blank Operations",
+        items: ["blank.trimTrailing", "blank.trimLeading", "blank.trimBoth", "blank.eolToSpace", "blank.trimBothEol", "-", "blank.tabToSpace", "blank.spaceToTabAll", "blank.spaceToTabLeading"],
+      },
+      { label: "Indent", items: ["indent.more", "indent.less"] },
+      { label: "Comment/Uncomment", items: ["comment.line", "comment.block"] },
+    ],
+  },
   {
     label: "Search",
-    items: ["search.find", "search.replace", "search.findInFiles", "search.findInProjects", "search.mark", "-", "search.findNext", "search.findPrev", "-", "bookmark.toggle", "bookmark.next", "bookmark.prev", "bookmark.clear", "marks.clear"],
+    items: [
+      "search.find",
+      "search.replace",
+      "search.findInFiles",
+      "search.findInProjects",
+      "search.mark",
+      "-",
+      "search.findNext",
+      "search.findPrev",
+      "-",
+      { label: "Bookmark", items: ["bookmark.toggle", "bookmark.next", "bookmark.prev", "bookmark.clear", "-", "bm.cut", "bm.copy", "bm.paste", "bm.remove", "bm.removeNon", "bm.inverse"] },
+      "marks.clear",
+    ],
   },
-  { label: "View", items: ["view.wordWrap", "view.showWhitespace", "-", "view.theme.system", "view.theme.light", "view.theme.dark"] },
+  { label: "View", items: ["view.wordWrap", "view.showWhitespace", "view.showAllCharacters", "-", "view.theme.system", "view.theme.light", "view.theme.dark"] },
   { label: "Encoding", items: ["eol.lf", "eol.crlf", "eol.cr", "-", ...ENCODINGS.map((e) => e.id)] },
   { label: "Language", items: LANGUAGES.map((l) => `lang.${l.name}`) },
   { label: "JSON", items: ["json.pretty", "json.minify", "json.validate"] },
   { label: "Settings", items: ["settings.open"] },
 ];
+
+/** Every command id referenced by a menu, flattened (used by tests). */
+export function menuIds(items: MenuItem[] = MENU.flatMap((m) => m.items)): string[] {
+  return items.flatMap((i) => (i === "-" ? [] : typeof i === "string" ? [i] : menuIds(i.items)));
+}
