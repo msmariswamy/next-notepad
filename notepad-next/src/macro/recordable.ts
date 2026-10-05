@@ -7,7 +7,8 @@ export type Recordability =
   /** Not recorded as a command because the same action is already recorded another way (Find Next through the Find controller). */
   | "covered";
 
-const REFUSED_PREFIXES = ["file.", "macro.", "view.", "settings.", "help."];
+// convert.* opens a new tab with its result, like file.* commands do.
+const REFUSED_PREFIXES = ["file.", "macro.", "view.", "settings.", "help.", "convert."];
 
 const REFUSED_IDS = new Set(["search.find", "search.replace", "search.findInFiles", "search.findInProjects", "search.mark"]);
 

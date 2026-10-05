@@ -10,6 +10,16 @@ export interface LanguageDef {
   load: () => Promise<Extension>;
 }
 
+/** Live error underlines for XML and YAML tabs only (design D7), attached with the language like JSON's marks are. */
+const xmlErrorMarks = async () => {
+  const [{ languageErrorMarks }, { xmlErrorRange }] = await Promise.all([import("../editor/syntaxErrors"), import("../xml/errors")]);
+  return languageErrorMarks({ validate: xmlErrorRange, className: "cm-xml-error" });
+};
+const yamlErrorMarks = async () => {
+  const [{ languageErrorMarks }, { yamlErrorRange }] = await Promise.all([import("../editor/syntaxErrors"), import("../yaml/tools")]);
+  return languageErrorMarks({ validate: yamlErrorRange, className: "cm-yaml-error" });
+};
+
 export const LANGUAGES: LanguageDef[] = [
   { name: PLAIN_TEXT, extensions: ["txt", "text", "log"], load: async () => [] },
   { name: "JSON", extensions: ["json", "jsonc", "geojson", "webmanifest"], load: async () => [(await import("@codemirror/lang-json")).json(), (await import("../editor/jsonErrors")).jsonErrorMarks()] },
@@ -17,9 +27,9 @@ export const LANGUAGES: LanguageDef[] = [
   { name: "TypeScript", extensions: ["ts", "mts", "cts", "tsx"], load: async () => (await import("@codemirror/lang-javascript")).javascript({ typescript: true, jsx: true }) },
   { name: "HTML", extensions: ["html", "htm", "xhtml"], load: async () => (await import("@codemirror/lang-html")).html() },
   { name: "CSS", extensions: ["css", "scss", "less"], load: async () => (await import("@codemirror/lang-css")).css() },
-  { name: "XML", extensions: ["xml", "svg", "plist", "xsd", "xsl", "xslt", "csproj", "pom"], load: async () => (await import("@codemirror/lang-xml")).xml() },
+  { name: "XML", extensions: ["xml", "svg", "plist", "xsd", "xsl", "xslt", "csproj", "pom"], load: async () => [(await import("@codemirror/lang-xml")).xml(), await xmlErrorMarks()] },
   { name: "Markdown", extensions: ["md", "markdown", "mdown"], load: async () => (await import("@codemirror/lang-markdown")).markdown() },
-  { name: "YAML", extensions: ["yaml", "yml"], load: async () => (await import("@codemirror/lang-yaml")).yaml() },
+  { name: "YAML", extensions: ["yaml", "yml"], load: async () => [(await import("@codemirror/lang-yaml")).yaml(), await yamlErrorMarks()] },
   { name: "Python", extensions: ["py", "pyw", "pyi"], load: async () => (await import("@codemirror/lang-python")).python() },
   { name: "Java", extensions: ["java"], load: async () => (await import("@codemirror/lang-java")).java() },
   { name: "C", extensions: ["c", "h"], load: async () => (await import("@codemirror/lang-cpp")).cpp() },

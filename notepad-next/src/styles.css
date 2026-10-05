@@ -85,7 +85,7 @@ dialog.find-dialog { position: fixed; right: 24px; bottom: 48px; left: auto; top
 .menu-nested.flip { left: auto; right: 100%; }
 .tab.missing .tab-title { color: #e67700; }
 #statusbar span:first-child { overflow: hidden; text-overflow: ellipsis; }
-.cm-json-error { text-decoration: underline wavy #e03131; text-underline-offset: 3px; }
+.cm-json-error, .cm-xml-error, .cm-yaml-error { text-decoration: underline wavy #e03131; text-underline-offset: 3px; }
 dialog.about { border: 1px solid #8886; border-radius: 10px; padding: 20px 28px; text-align: center; min-width: 300px; }
 dialog.about h2 { margin: 0 0 4px; }
 .about-version { opacity: 0.7; margin: 0 0 14px; }

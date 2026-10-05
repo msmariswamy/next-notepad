@@ -50,8 +50,8 @@ describe("command registry", () => {
     expect(new Set(accels).size).toBe(accels.length);
   });
 
-  it("menus cover File, Edit, Search, View, Encoding, Language, JSON, Macro, Settings and Help", () => {
-    expect(MENU.map((m) => m.label)).toEqual(["File", "Edit", "Search", "View", "Encoding", "Language", "JSON", "Macro", "Settings", "Help"]);
+  it("menus cover File, Edit, Search, View, Encoding, Language, JSON, XML, YAML, Macro, Settings and Help", () => {
+    expect(MENU.map((m) => m.label)).toEqual(["File", "Edit", "Search", "View", "Encoding", "Language", "JSON", "XML", "YAML", "Macro", "Settings", "Help"]);
   });
 });
 
@@ -381,5 +381,64 @@ describe("Edit commands via the registry", () => {
     app.view.dispatch({ changes: { from: 0, insert: "hi" }, selection: { anchor: 0, head: 2 } });
     await cmd("edit.copy").run();
     expect(app.view.state.doc.toString()).toBe("hi");
+  });
+});
+
+describe("XML, YAML and Convert menus", () => {
+  const menuOf = (label: string) => MENU.find((m) => m.label === label)!;
+  const flat = (label: string) => menuIds(menuOf(label).items);
+  const labelOf = (id: string) => cmd(id).label;
+
+  it("the XML menu lists format (2, 4, tabs), compact, sort attributes, escape, unescape, validate and Convert to JSON", () => {
+    expect(flat("XML")).toEqual([
+      "xml.format2", "xml.format4", "xml.formatTabs", "xml.compact", "xml.sortAttributes", "xml.escape", "xml.unescape", "xml.validate", "convert.xmlToJson",
+    ]);
+  });
+
+  it("the YAML menu offers 2 and 4 spaces but no tab option", () => {
+    expect(flat("YAML")).toEqual(["yaml.format2", "yaml.format4", "yaml.compact", "yaml.sortKeys", "yaml.validate", "convert.yamlToJson"]);
+    expect(flat("YAML").map(labelOf).join("|")).not.toMatch(/tab/i);
+  });
+
+  it("the JSON menu gains the two conversions", () => {
+    expect(flat("JSON")).toEqual(expect.arrayContaining(["convert.jsonToYaml", "convert.jsonToXml"]));
+  });
+
+  it("every one of these commands exists, once, with no accelerator", () => {
+    const ids = [...flat("XML"), ...flat("YAML"), "convert.jsonToYaml", "convert.jsonToXml"];
+    for (const id of ids) {
+      expect(commands.filter((c) => c.id === id), id).toHaveLength(1);
+      expect(cmd(id).accelerator, id).toBeUndefined();
+    }
+  });
+
+  it("XML > Compact compacts the active document in one undo step", async () => {
+    app.view.dispatch({ changes: { from: 0, insert: "<a>\n  <b/>\n</a>" } });
+    await cmd("xml.compact").run();
+    await vi.waitFor(() => expect(app.view.state.doc.toString()).toBe("<a><b/></a>"));
+    expect(app.manager.active!.language).toBe("XML");
+  });
+
+  it("XML > Validate reports a broken document without changing it", async () => {
+    app.view.dispatch({ changes: { from: 0, insert: "<a><b></a>" } });
+    await cmd("xml.validate").run();
+    await vi.waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringMatching(/Invalid XML: Line 1/), "error"));
+    expect(app.view.state.doc.toString()).toBe("<a><b></a>");
+  });
+
+  it("YAML > Sort Keys sorts the active document", async () => {
+    app.view.dispatch({ changes: { from: 0, insert: "b: 1\na: 2\n" } });
+    await cmd("yaml.sortKeys").run();
+    await vi.waitFor(() => expect(app.view.state.doc.toString()).toBe("a: 2\nb: 1\n"));
+  });
+
+  it("JSON > Convert to YAML opens a new tab and leaves the JSON tab alone", async () => {
+    app.view.dispatch({ changes: { from: 0, insert: '{"a": 1}' } });
+    const jsonId = app.manager.activeId!;
+    await cmd("convert.jsonToYaml").run();
+    await vi.waitFor(() => expect(app.manager.docs).toHaveLength(2));
+    expect(app.manager.get(jsonId)!.text).toBe('{"a": 1}');
+    expect(app.view.state.doc.toString()).toBe("a: 1");
+    expect(app.manager.active!.language).toBe("YAML");
   });
 });

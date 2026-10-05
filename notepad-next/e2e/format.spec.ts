@@ -159,10 +159,10 @@ test.describe("auto-detect", () => {
 });
 
 test.describe("JSON menu", () => {
-  test("lists every JSON command", async ({ page }) => {
+  test("lists every JSON command, then the two conversions", async ({ page }) => {
     await bar(page).locator(".menu-title", { hasText: /^JSON$/ }).click();
     const labels = await bar(page).locator(".menu.open .menu-label").allTextContents();
-    expect(labels).toEqual(["Pretty-print (2 spaces)", "Pretty-print (4 spaces)", "Pretty-print (tabs)", "Compress (minify)", "Sort Keys", "Escape as JSON String", "Unescape JSON String", "Validate"]);
+    expect(labels).toEqual(["Pretty-print (2 spaces)", "Pretty-print (4 spaces)", "Pretty-print (tabs)", "Compress (minify)", "Sort Keys", "Escape as JSON String", "Unescape JSON String", "Validate", "Convert to YAML", "Convert to XML"]);
   });
 
   test("Pretty-print (4 spaces) and Compress", async ({ page }) => {

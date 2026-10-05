@@ -63,6 +63,7 @@ beforeEach(async () => {
     { id: "case.upper", label: "UPPERCASE", run: () => app.applyChangesToDoc(app.manager.activeId!, [{ from: 0, to: app.view.state.doc.length, insert: doc().toUpperCase() }]) },
     { id: "file.open", label: "Open…", run: () => opened() },
     { id: "view.wordWrap", label: "Word Wrap", run: vi.fn() },
+    { id: "convert.jsonToYaml", label: "Convert to YAML", run: () => opened() },
     { id: "search.findNext", label: "Find Next", run: () => void finder.findNext() },
     { id: "macro.stopRecording", label: "Stop Recording", run: () => controller.stopRecording() },
   ];
@@ -102,6 +103,16 @@ describe("recording", () => {
     await run("file.open");
     expect(opened).toHaveBeenCalled();
     expect(notify).toHaveBeenLastCalledWith(expect.stringMatching(/Open….*cannot be recorded/i), "error");
+    type("x");
+    controller.stopRecording();
+    expect(controller.current?.steps).toEqual([{ type: "text", insert: "x", before: 0, after: 0 }]);
+  });
+
+  it("does not record a Convert command, which opens a tab: it runs and a toast says so", async () => {
+    controller.startRecording();
+    await run("convert.jsonToYaml");
+    expect(opened).toHaveBeenCalled();
+    expect(notify).toHaveBeenLastCalledWith(expect.stringMatching(/Convert to YAML.*cannot be recorded/i), "error");
     type("x");
     controller.stopRecording();
     expect(controller.current?.steps).toEqual([{ type: "text", insert: "x", before: 0, after: 0 }]);

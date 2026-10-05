@@ -20,9 +20,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("menu bar", () => {
-  test("shows all ten menus", async ({ page }) => {
+  test("shows all twelve menus", async ({ page }) => {
     const titles = await page.getByTestId("menubar").locator(".menu-title").allTextContents();
-    expect(titles).toEqual(["File", "Edit", "Search", "View", "Encoding", "Language", "JSON", "Macro", "Settings", "Help"]);
+    expect(titles).toEqual(["File", "Edit", "Search", "View", "Encoding", "Language", "JSON", "XML", "YAML", "Macro", "Settings", "Help"]);
   });
 
   test("File > New opens a second tab", async ({ page }) => {

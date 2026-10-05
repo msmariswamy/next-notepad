@@ -5,6 +5,7 @@ import type { CaseMode, SortKind } from "../edit/transforms";
 import type { App } from "./app";
 import { LANGUAGES } from "../lang/languages";
 import { runBase64Command } from "../edit/base64Commands";
+import { dataToolCommands } from "../tools/dataCommands";
 import { runJsonCommand } from "../json/jsonCommands";
 import { runFormatDocument } from "../format/formatCommand";
 import { openAboutDialog } from "./about";
@@ -226,6 +227,8 @@ export function createCommands(ctx: CommandContext): Command[] {
     { id: "json.escape", label: "Escape as JSON String", run: () => void runJsonCommand(app, "escape") },
     { id: "json.unescape", label: "Unescape JSON String", run: () => void runJsonCommand(app, "unescape") },
     { id: "json.validate", label: "Validate", accelerator: "Mod+Alt+V", run: () => void runJsonCommand(app, "validate") },
+    // XML, YAML and Convert
+    ...dataToolCommands(app),
     // Macro
     { id: "macro.startRecording", label: "Start Recording", run: () => ctx.macros?.startRecording() },
     { id: "macro.stopRecording", label: "Stop Recording", run: () => ctx.macros?.stopRecording() },
@@ -319,7 +322,12 @@ export function buildMenu(savedMacroIds: string[] = []): MenuModel[] {
   { label: "View", items: ["view.wordWrap", "view.showWhitespace", "view.showAllCharacters", "-", "view.functionList", "view.documentMap", "-", "view.splitVertical", "view.splitHorizontal", "view.closeSplit", "view.moveToOtherPane", "-", "view.theme.system", "view.theme.light", "view.theme.dark"] },
   { label: "Encoding", items: ["eol.lf", "eol.crlf", "eol.cr", "-", ...ENCODINGS.map((e) => e.id)] },
   { label: "Language", items: LANGUAGES.map((l) => `lang.${l.name}`) },
-  { label: "JSON", items: ["json.pretty", "json.pretty4", "json.prettyTabs", "json.minify", "json.sortKeys", "-", "json.escape", "json.unescape", "-", "json.validate"] },
+  { label: "JSON", items: ["json.pretty", "json.pretty4", "json.prettyTabs", "json.minify", "json.sortKeys", "-", "json.escape", "json.unescape", "-", "json.validate", "-", "convert.jsonToYaml", "convert.jsonToXml"] },
+  {
+    label: "XML",
+    items: ["xml.format2", "xml.format4", "xml.formatTabs", "-", "xml.compact", "xml.sortAttributes", "-", "xml.escape", "xml.unescape", "-", "xml.validate", "-", "convert.xmlToJson"],
+  },
+  { label: "YAML", items: ["yaml.format2", "yaml.format4", "-", "yaml.compact", "yaml.sortKeys", "-", "yaml.validate", "-", "convert.yamlToJson"] },
   {
     label: "Macro",
     items: [

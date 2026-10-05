@@ -103,9 +103,14 @@ The system SHALL sort mapping keys at every depth in ascending order, keep each 
 - **THEN** the list is still `c`, `a`, `b`
 
 #### Scenario: Anchors preserved
-- **GIVEN** `b: *x\na: &x 1`
+- **GIVEN** `d: 4\nb: *x\na: &x 1` is rewritten with the anchor first, that is `d: 4\na: &x 1\nb: *x`
 - **WHEN** the user runs YAML > Sort Keys
-- **THEN** the anchor `&x` and alias `*x` are still present
+- **THEN** the result is `a: &x 1\nb: *x\nd: 4`, with the anchor `&x` and alias `*x` still present
+
+#### Scenario: A sort that would move an alias before its anchor is refused
+- **GIVEN** `z: &x 1\na: *x`
+- **WHEN** the user runs YAML > Sort Keys
+- **THEN** the text is unchanged and a toast explains that sorting would put the alias before its anchor
 
 ### Requirement: YAML selections
 A YAML selection SHALL be dedented by its common leading whitespace, processed as its own document, and re-indented to the original level on every non-blank line. If it cannot be parsed alone, the text SHALL be left unchanged and the error shown.

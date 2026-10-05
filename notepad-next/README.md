@@ -45,6 +45,15 @@ cd src-tauri && cargo test   # Rust backend
   to in-editor search.
 - JSON menu: **Pretty-print** (2 spaces / 4 spaces / tabs), **Compress** (minify), **Sort Keys**, **Escape / Unescape as JSON String**
   and **Validate** (reports line and column and moves the caret there).
+- **XML menu**: Format (2 spaces / 4 spaces / tabs), **Compact** (removes whitespace between tags, never touching text, comments,
+  CDATA or `xml:space="preserve"` content), **Validate** (line and column), **Sort Attributes**, **Escape / Unescape**. An XML
+  tab underlines the first well-formedness error while you type.
+- **YAML menu**: Format (2 or 4 spaces), **Compact** (flow style, single document only), **Validate** (every document),
+  **Sort Keys** (every depth, comments stay with their keys). A selection is dedented, processed and re-indented. A YAML tab
+  underlines the first syntax error while you type.
+- **Convert** (JSON, YAML and XML menus): JSON to YAML, YAML to JSON, XML to JSON and JSON to XML open the result in a **new
+  tab** and report anything that could not be kept (dropped comments, flattened mixed content, keys turned into strings).
+  XML to JSON uses `@attr` for attributes and `#text` for text, with repeated elements as arrays.
 - **Format Document** (Edit menu, ⌥⌘L / Ctrl+Alt+L) for JSON, JavaScript, TypeScript, HTML, CSS, XML, YAML and Java, using the
   tab width / tabs settings. JavaScript, TypeScript, CSS and YAML use Prettier (loaded on first use); HTML, XML and Java use
   built-in formatters that always put each element or block on its own indented line. Invalid code is never modified and

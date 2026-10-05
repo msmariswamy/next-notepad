@@ -19,6 +19,9 @@ Close the app and your unsaved tabs come back exactly as you left them.
   Count, Find All, Replace All in all open tabs, and five mark styles with bookmarks.
 - **JSON tools**: pretty-print (2 spaces, 4 spaces, tabs), compress, sort keys, escape and unescape, and validation that
   jumps to the error line and column.
+- **XML and YAML tools**: XML and YAML menus next to JSON with Format, Compact, Validate and Sort (XML attributes, YAML keys),
+  XML escape/unescape, and live error underlines. **Convert** between JSON, YAML and XML (JSON to YAML, YAML to JSON,
+  XML to JSON, JSON to XML); the result opens in a new tab and the original is untouched.
 - **Format Document** for JSON, JavaScript, TypeScript, HTML, CSS, XML, YAML and Java, with automatic language
   detection for untitled text.
 - **Edit tools**: convert case, line operations (duplicate, remove duplicates, join, split, move, reverse, 14 sort
