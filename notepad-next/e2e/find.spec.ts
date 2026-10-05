@@ -166,3 +166,31 @@ test("Escape closes the dialog", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(dialog(page)).toHaveCount(0);
 });
+
+// The exact scenario from the bug report: five lines, Extended mode, "\r\n" -> ",".
+test("Extended \\r\\n replaced with a comma joins all lines", async ({ page }) => {
+  await page.locator(".cm-content").click();
+  for (const [i, line] of ["asdasd", "adad", "asdlkasdkl", "asdlkas", "asdad"].entries()) {
+    if (i > 0) await page.keyboard.press("Enter");
+    await page.keyboard.type(line);
+  }
+  await page.keyboard.press("Meta+h");
+  await dialog(page).locator('input[name="mode"][value="extended"]').check();
+  await dialog(page).locator('[name="findWhat"]').fill("\\r\\n");
+  await dialog(page).locator('[name="replaceWith"]').fill(",");
+  await dialog(page).getByRole("button", { name: "Replace All", exact: true }).click();
+  await expect(message(page)).toHaveText("Replace All: 4 occurrences replaced");
+  await expect(page.locator(".cm-content")).toHaveText("asdasd,adad,asdlkasdkl,asdlkas,asdad");
+});
+
+test("the Find tab hides the Replace row and buttons; the Replace tab hides Count", async ({ page }) => {
+  await page.locator(".cm-content").click();
+  await page.keyboard.press("Meta+f");
+  await expect(dialog(page).locator('[name="replaceWith"]')).toBeHidden();
+  await expect(dialog(page).getByRole("button", { name: "Replace All", exact: true })).toBeHidden();
+  await expect(dialog(page).getByRole("button", { name: "Count", exact: true })).toBeVisible();
+  await dialog(page).locator('[data-tab="replace"]').click();
+  await expect(dialog(page).locator('[name="replaceWith"]')).toBeVisible();
+  await expect(dialog(page).getByRole("button", { name: "Count", exact: true })).toBeHidden();
+  await expect(dialog(page).getByRole("button", { name: "Replace All", exact: true })).toBeVisible();
+});

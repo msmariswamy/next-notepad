@@ -73,6 +73,11 @@ pub fn expand_extended(text: &str) -> String {
     out
 }
 
+/// Documents are LF-normalised (see files.rs), so CR / CRLF in a pattern or replacement means a line break.
+pub fn normalize_line_breaks(text: &str) -> String {
+    text.replace("\r\n", "\n").replace('\r', "\n")
+}
+
 fn is_word(c: char) -> bool {
     c.is_ascii_alphanumeric() || c == '_'
 }
@@ -135,6 +140,16 @@ pub fn translate_regex(pattern: &str) -> String {
                     out.push('\\');
                     i += 1;
                 }
+                Some('r') => {
+                    // \r\n, \r?\n and a lone \r all mean one line break against LF-normalised text.
+                    i += 2;
+                    if chars.get(i) == Some(&'\\') && chars.get(i + 1) == Some(&'n') {
+                        i += 2;
+                    } else if chars.get(i) == Some(&'?') && chars.get(i + 1) == Some(&'\\') && chars.get(i + 2) == Some(&'n') {
+                        i += 3;
+                    }
+                    out.push_str("\\n");
+                }
                 Some('h') => {
                     out.push_str(if in_class { " \\t" } else { "[ \\t]" });
                     i += 2;
@@ -181,7 +196,7 @@ pub fn translate_regex(pattern: &str) -> String {
 fn rust_source(pattern: &str, opts: &SearchOptions) -> String {
     let body = match opts.mode {
         Mode::Normal => regex::escape(pattern),
-        Mode::Extended => regex::escape(&expand_extended(pattern)),
+        Mode::Extended => regex::escape(&normalize_line_breaks(&expand_extended(pattern))),
         Mode::Regex => translate_regex(pattern),
     };
     if opts.whole_word {
@@ -212,7 +227,7 @@ pub fn compile(pattern: &str, opts: &SearchOptions) -> Result<Compiled, String> 
 pub fn expand_replacement(template: &str, groups: &[Option<&str>], mode: Mode) -> String {
     match mode {
         Mode::Normal => return template.to_string(),
-        Mode::Extended => return expand_extended(template),
+        Mode::Extended => return normalize_line_breaks(&expand_extended(template)),
         Mode::Regex => {}
     }
     let chars: Vec<char> = template.chars().collect();
@@ -230,7 +245,13 @@ pub fn expand_replacement(template: &str, groups: &[Option<&str>], mode: Mode) -
             match n {
                 d if d.is_ascii_digit() => out.push_str(group(d)),
                 'n' => out.push('\n'),
-                'r' => out.push('\r'),
+                'r' => {
+                    // \r\n is one line break
+                    if chars.get(i + 2) == Some(&'\\') && chars.get(i + 3) == Some(&'n') {
+                        i += 2;
+                    }
+                    out.push('\n');
+                }
                 't' => out.push('\t'),
                 '\\' => out.push('\\'),
                 other => {

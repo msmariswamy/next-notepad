@@ -52,3 +52,4 @@ dialog.find-dialog { position: fixed; right: 24px; bottom: 48px; left: auto; top
 .mark-swatch { padding: 0 6px; border-radius: 3px; }
 .cm-bookmark-gutter { width: 14px; }
 .cm-bookmark { color: #1c7ed6; cursor: pointer; font-size: 10px; }
+[hidden] { display: none !important; }

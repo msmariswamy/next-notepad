@@ -1,4 +1,5 @@
 mod files;
+mod find_files;
 mod regex_compat;
 mod session;
 mod settings;
@@ -17,6 +18,7 @@ pub fn run() {
             use tauri::Manager;
             let dir = app.path().app_data_dir()?;
             app.manage(settings::SettingsState::load(dir.join("settings.json")));
+            app.manage(find_files::FindJobs::default());
             app.manage(session::SessionState { dir: dir.join("session") });
             Ok(())
         })
@@ -27,7 +29,10 @@ pub fn run() {
             settings::get_settings,
             settings::update_settings,
             session::save_session,
-            session::load_session
+            session::load_session,
+            find_files::find_in_files,
+            find_files::replace_in_files,
+            find_files::cancel_find
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

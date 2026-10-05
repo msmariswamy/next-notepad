@@ -253,3 +253,53 @@ describe("Mark", () => {
     expect(app.getSelection().from).toBe(0);
   });
 });
+
+describe("line breaks in Extended mode (join lines with a comma)", () => {
+  const lines = "asdasd\nadad\nasdlkasdkl\nasdlkas\nasdad";
+
+  it("finds \\r\\n as a line break even though documents hold \\n only", () => {
+    setText(lines);
+    find.state.pattern = "\\r\\n";
+    find.state.opts.mode = "extended";
+    expect(find.count()).toBe(4);
+  });
+
+  it("Replace All of \\r\\n with a comma joins the lines", () => {
+    setText(lines);
+    find.state.pattern = "\\r\\n";
+    find.state.replacement = ",";
+    find.state.opts.mode = "extended";
+    expect(find.replaceAll()).toBe(4);
+    expect(text()).toBe("asdasd,adad,asdlkasdkl,asdlkas,asdad");
+  });
+
+  it("works on a selection of all lines too (In selection)", () => {
+    setText(lines);
+    app.setSelection({ from: 0, to: app.view.state.doc.length });
+    find.state.pattern = "\\r\\n";
+    find.state.replacement = ",";
+    find.state.opts.mode = "extended";
+    find.state.inSelection = true;
+    expect(find.replaceAll()).toBe(4);
+  });
+
+  it("works in regular expression mode with \\r\\n and \\r?\\n", () => {
+    for (const pattern of ["\\r\\n", "\\r?\\n", "\\n"]) {
+      setText(lines);
+      find.state.pattern = pattern;
+      find.state.replacement = "|";
+      find.state.opts.mode = "regex";
+      expect(find.replaceAll(), pattern).toBe(4);
+      expect(text()).toBe("asdasd|adad|asdlkasdkl|asdlkas|asdad");
+    }
+  });
+
+  it("a replacement of \\r\\n inserts a single line break", () => {
+    setText("a,b");
+    find.state.pattern = ",";
+    find.state.replacement = "\\r\\n";
+    find.state.opts.mode = "extended";
+    find.replaceAll();
+    expect(text()).toBe("a\nb");
+  });
+});

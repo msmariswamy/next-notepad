@@ -26,6 +26,14 @@ export function escapeRegex(text: string): string {
 const HEX = /^[0-9a-fA-F]+$/;
 
 /**
+ * Documents hold text with "\n" line breaks only (files are normalised on open and the original
+ * line ending is restored on save), so a CR or CRLF in a pattern or replacement means "a line break".
+ */
+export function normalizeLineBreaks(text: string): string {
+  return text.replace(/\r\n|\r/g, "\n");
+}
+
+/**
  * Expand Extended-mode escapes (\n \r \t \0 \\ \xHH \uHHHH). Unknown escapes keep their backslash.
  */
 export function expandExtended(text: string): string {
@@ -95,7 +103,12 @@ export function translateRegexToJs(pattern: string): string {
         break;
       }
       i++;
-      if (n === "h") out += inClass ? " \\t" : "[ \\t]";
+      if (n === "r") {
+        // \r\n, \r?\n and a lone \r all mean one line break against LF-normalised text.
+        if (pattern.startsWith("\\n", i + 1)) i += 2;
+        else if (pattern.startsWith("?\\n", i + 1)) i += 3;
+        out += "\\n";
+      } else if (n === "h") out += inClass ? " \\t" : "[ \\t]";
       else if (n === "R" && !inClass) out += "(?:\\r\\n|\\n|\\r)";
       else if (n === "A" && !inClass) out += "(?<![\\s\\S])";
       else if (n === "z" && !inClass) out += "(?![\\s\\S])";
@@ -137,7 +150,7 @@ const u = (ch: string) => "\\u" + ch.charCodeAt(0).toString(16).padStart(4, "0")
 export function toJsRegExp(pattern: string, opts: PatternOptions, extraFlags = "g"): RegExp {
   let source: string;
   if (opts.mode === "normal") source = escapeRegex(pattern);
-  else if (opts.mode === "extended") source = escapeRegex(expandExtended(pattern));
+  else if (opts.mode === "extended") source = escapeRegex(normalizeLineBreaks(expandExtended(pattern)));
   else source = translateRegexToJs(pattern);
   if (opts.wholeWord) source = `(?<!\\w)(?:${source})(?!\\w)`;
   let flags = "m" + extraFlags;
@@ -159,7 +172,7 @@ export function expandReplacement(
   mode: SearchMode,
 ): string {
   if (mode === "normal") return template;
-  if (mode === "extended") return expandExtended(template);
+  if (mode === "extended") return normalizeLineBreaks(expandExtended(template));
   let out = "";
   for (let i = 0; i < template.length; i++) {
     const c = template[i];
@@ -169,8 +182,10 @@ export function expandReplacement(
       const n = template[++i];
       if (/[0-9]/.test(n)) out += groups[Number(n)] ?? "";
       else if (n === "n") out += "\n";
-      else if (n === "r") out += "\r";
-      else if (n === "t") out += "\t";
+      else if (n === "r") {
+        if (template.startsWith("\\n", i + 1)) i += 2; // \r\n is one line break
+        out += "\n";
+      } else if (n === "t") out += "\t";
       else if (n === "\\") out += "\\";
       else out += "\\" + n;
     } else out += c;
