@@ -85,3 +85,19 @@ Formatting parses and re-prints the JSON, so:
 ## App icon
 
 `design/app-icon.svg` is the source. `node design/render-icon.mjs` renders `design/app-icon.png`, and `npx tauri icon design/app-icon.png` regenerates everything in `src-tauri/icons/`.
+
+## Releasing (macOS `.dmg` and Windows `.exe`)
+
+Local build on your own machine: `npm run tauri build` (macOS gives `src-tauri/target/release/bundle/dmg/*.dmg`,
+Windows gives `bundle/nsis/*-setup.exe`). Each OS must be built on that OS.
+
+To publish both from GitHub:
+
+1. Bump `version` in `src-tauri/tauri.conf.json` (and `package.json`), commit and push.
+2. `git tag v0.1.0 && git push origin v0.1.0` (the tag must equal `v` + the app version, or the workflow stops).
+3. The `release-next-notepad` workflow builds a universal macOS `.dmg` (Apple Silicon + Intel) and a Windows NSIS installer,
+   runs the unit tests first, and attaches both to a **draft** GitHub Release. Review it, then press *Publish*.
+
+Unsigned builds work but show warnings (macOS Gatekeeper: right-click the app > Open; Windows SmartScreen: More info >
+Run anyway). To sign and notarize the macOS build, add the `APPLE_*` repository secrets listed (commented) in
+`.github/workflows/release-next-notepad.yml` and uncomment them.
