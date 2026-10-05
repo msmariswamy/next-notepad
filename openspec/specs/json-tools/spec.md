@@ -1,7 +1,7 @@
 # json-tools Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Format, compress, sort, escape and validate JSON, reporting the exact line and column of errors.
 ## Requirements
 ### Requirement: Pretty-print JSON
 The system SHALL reformat the current document, or the selection, as indented JSON when the user invokes Pretty-print.

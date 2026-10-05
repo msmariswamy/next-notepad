@@ -1,7 +1,7 @@
 # syntax-highlighting Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Pick a language per document and highlight it in light and dark themes, marking JSON syntax errors.
 ## Requirements
 ### Requirement: Language detection by extension
 The system SHALL choose a highlighting language from the file extension when a file is opened or saved.

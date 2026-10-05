@@ -1,7 +1,7 @@
 # editor-core Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Core text editing: open and save files keeping their encoding and line endings, multiple carets, folding and the status bar.
 ## Requirements
 ### Requirement: Open and save files
 The system SHALL open existing text files into the editor and save edits back to disk, including Save As for new or untitled documents.

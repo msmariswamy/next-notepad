@@ -1,7 +1,7 @@
 # session-restore Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Never lose text: keep every open tab, saved or untitled, and restore it on the next launch, even after a crash.
 ## Requirements
 ### Requirement: Persist all tabs on quit
 The system SHALL write the state of every open tab to the app-data directory when the app quits. Untitled and dirty tabs SHALL store their full text; clean saved tabs SHALL store only their file path.

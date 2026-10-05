@@ -1,7 +1,7 @@
 # find-replace Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+The Find and Replace dialog: search modes, match options, counting, listing results and replacing in open documents.
 ## Requirements
 ### Requirement: Find dialog tabs
 The system SHALL provide a Find dialog with the tabs Find, Replace, Find in Files, Find in Projects and Mark, reachable from the Search menu and keyboard shortcuts.

@@ -1,7 +1,7 @@
 # bookmark-lines Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Act on bookmarked lines in bulk: copy, cut, replace, remove, remove the others, or invert the bookmarks.
 ## Requirements
 ### Requirement: Bookmarked-line operations
 The system SHALL provide Search > Bookmark commands to Cut Bookmarked Lines, Copy Bookmarked Lines, Paste to (Replace) Bookmarked Lines, Remove Bookmarked Lines, Remove Non-Bookmarked Lines and Inverse Bookmarks.

@@ -1,7 +1,7 @@
 # code-formatting Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Re-indent and re-format code in the supported languages with one command, safely and as a single undo step.
 ## Requirements
 ### Requirement: Format document
 The system SHALL provide a Format Document command (Edit > Format, Cmd/Ctrl+Alt+L) that re-indents and re-formats the current document or selection according to its language: JSON, JavaScript, TypeScript, HTML, CSS, XML, YAML and Java, using the configured tab width.

@@ -1,7 +1,7 @@
 # language-detection Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Choose the right language for a document from its content when the file name does not say.
 ## Requirements
 ### Requirement: Detect the language from content
 The system SHALL detect JSON, XML, HTML, YAML and Java from the text of a document that has no recognised file extension, and set that document's language automatically.

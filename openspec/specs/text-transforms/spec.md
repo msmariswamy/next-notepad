@@ -1,7 +1,7 @@
 # text-transforms Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Edit-menu text tools: case conversion, line operations and sorting, blank handling, indent and comments.
 ## Requirements
 ### Requirement: Convert case
 The system SHALL convert the selected text (or the current word when nothing is selected) to UPPERCASE, lowercase, Proper Case, Proper Case (blend), Sentence case, Sentence case (blend), iNVERT cASE or ranDOm CasE, as an Edit > Convert Case to submenu.

@@ -1,7 +1,7 @@
 # view-options Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Display options: word wrap, show all characters, and tab width or tab-character indentation.
 ## Requirements
 ### Requirement: Word wrap
 The system SHALL provide View > Word Wrap, which wraps long lines at the window edge without changing the text, and applies to every tab.

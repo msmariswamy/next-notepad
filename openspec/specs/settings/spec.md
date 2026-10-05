@@ -1,7 +1,7 @@
 # settings Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+User preferences stored in the app-data folder, including whether closing a tab or quitting asks to save.
 ## Requirements
 ### Requirement: Settings dialog
 The system SHALL provide a Settings dialog, reachable from the menu and a keyboard shortcut, that persists changes immediately.

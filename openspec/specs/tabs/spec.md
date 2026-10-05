@@ -1,7 +1,7 @@
 # tabs Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Tabbed documents with modified indicators and the choice of prompting or silently keeping unsaved text on close.
 ## Requirements
 ### Requirement: Tabbed documents
 The system SHALL show every open document as a tab, and allow creating, switching, reordering and closing tabs.

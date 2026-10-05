@@ -1,7 +1,7 @@
 # mark Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Highlight matches in five styles and bookmark lines, with marks that follow the text as it is edited.
 ## Requirements
 ### Requirement: Mark All
 The system SHALL highlight every match of the search in the current document when the user clicks Mark All, using the selected mark style.

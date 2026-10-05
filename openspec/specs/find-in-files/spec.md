@@ -1,7 +1,7 @@
 # find-in-files Specification
 
 ## Purpose
-TBD - created by archiving change macos-flutter-notepad. Update Purpose after archive.
+Search and replace across a folder or project with the same pattern behaviour as searching inside the editor.
 ## Requirements
 ### Requirement: Find in Files
 The system SHALL search all files in a chosen directory, with a file-name filter, optional "In all sub-folders" and "In hidden folders" toggles, and the same Normal, Extended and Regular expression modes and match options as in-editor search.
