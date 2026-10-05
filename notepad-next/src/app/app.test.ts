@@ -145,3 +145,50 @@ describe("closing tabs", () => {
     expect(app.manager.recentlyClosed[0].text).toBe("keep me");
   });
 });
+
+describe("quitting", () => {
+  it("quits without prompting when nothing is dirty", async () => {
+    expect(await app.requestQuit()).toBe(true);
+    expect(platform.confirmUnsaved).not.toHaveBeenCalled();
+  });
+
+  it("prompts per dirty tab and aborts the quit on Cancel", async () => {
+    type("x");
+    expect(await app.requestQuit()).toBe(false);
+    expect(platform.confirmUnsaved).toHaveBeenCalledWith("new 1");
+  });
+
+  it("saves then quits when Save is chosen", async () => {
+    platform.confirmUnsaved = vi.fn(async () => "save" as const);
+    type("x");
+    expect(await app.requestQuit()).toBe(true);
+    expect(ipc.calls.some((c) => c.command === "save_file_cmd")).toBe(true);
+  });
+
+  it("does not quit if Save is chosen but the save dialog is cancelled", async () => {
+    platform.confirmUnsaved = vi.fn(async () => "save" as const);
+    platform.pickSavePath = vi.fn(async () => null);
+    type("x");
+    expect(await app.requestQuit()).toBe(false);
+  });
+
+  it("does not prompt when silentClose is on and runs the quit hook", async () => {
+    settings.silentClose = true;
+    const onQuit = vi.fn(async () => {});
+    app = new App({
+      editorParent: document.getElementById("editor")!,
+      tabsEl: document.getElementById("tabs")!,
+      statusEl: document.getElementById("status")!,
+      manager: new DocumentManager(),
+      platform,
+      ipc,
+      settings: { get: () => settings, subscribe: () => () => {} },
+      onQuit,
+    });
+    app.start();
+    type("unsaved");
+    expect(await app.requestQuit()).toBe(true);
+    expect(platform.confirmUnsaved).not.toHaveBeenCalled();
+    expect(onQuit).toHaveBeenCalled();
+  });
+});

@@ -17,6 +17,8 @@ export interface AppDeps {
   platform: Platform;
   ipc: Ipc;
   settings: SettingsSource;
+  /** Called after quit prompts are resolved; used to flush the session snapshot. */
+  onQuit?: () => Promise<void>;
 }
 
 /**
@@ -125,6 +127,25 @@ export class App {
       eol: doc.eol,
     });
     this.manager.markSaved(id, path);
+    return true;
+  }
+
+  /**
+   * Quit flow. silentClose off: prompt for each dirty tab (Cancel aborts the quit).
+   * silentClose on: no prompts; the session snapshot keeps every tab's text.
+   * Returns true when the app may exit.
+   */
+  async requestQuit(): Promise<boolean> {
+    if (!this.deps.settings.get().silentClose) {
+      for (const doc of this.manager.docs.filter((d) => d.dirty)) {
+        this.manager.activate(doc.id);
+        const choice = await this.deps.platform.confirmUnsaved(doc.title);
+        if (choice === "cancel") return false;
+        if (choice === "save" && !(await this.saveDoc(doc.id))) return false;
+        if (choice === "discard") this.manager.close(doc.id);
+      }
+    }
+    await this.deps.onQuit?.();
     return true;
   }
 

@@ -35,13 +35,13 @@
 
 ## 5. Session restore (spec: session-restore, ADR-0002)
 
-- [ ] 5.1 Write Rust tests for the session store: atomic write, per-tab content files, interrupted-write recovery, corrupt-session quarantine, then implement
-- [ ] 5.2 Define the `session.json` schema (tabs, active tab, recently closed) with serialisation tests
-- [ ] 5.3 Implement the session client with a debounced snapshot (about 2 s) and a final flush on quit
-- [ ] 5.4 Implement restore on launch: tabs, content, encoding, EOL, dirty state, active tab; caret starts at the document start
-- [ ] 5.5 Handle restored tabs whose file is missing: keep text, mark path missing
-- [ ] 5.6 Implement quit flow for `silentClose` off (prompt per dirty tab) and on (no prompt, snapshot only)
-- [ ] 5.7 End-to-end test: type in untitled tabs, quit, relaunch, assert tabs and text restored; crash-kill variant
+- [x] 5.1 Write Rust tests for the session store: atomic write, per-tab content files, interrupted-write recovery, corrupt-session quarantine, then implement
+- [x] 5.2 Define the `session.json` schema (tabs, active tab, recently closed) with serialisation tests
+- [x] 5.3 Implement the session client with a debounced snapshot (about 2 s) and a final flush on quit
+- [x] 5.4 Implement restore on launch: tabs, content, encoding, EOL, dirty state, active tab; caret starts at the document start
+- [x] 5.5 Handle restored tabs whose file is missing: keep text, mark path missing
+- [x] 5.6 Implement quit flow for `silentClose` off (prompt per dirty tab) and on (no prompt, snapshot only)
+- [x] 5.7 End-to-end test: type in untitled tabs, quit, relaunch, assert tabs and text restored; crash-kill variant
 
 ## 6. regex-compat layer (spec: find-replace, find-in-files, ADR-0003)
 

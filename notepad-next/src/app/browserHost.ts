@@ -16,6 +16,13 @@ export function createBrowserHost(): { ipc: Ipc; platform: Platform } {
       if (!files.has(path)) throw new Error(`No such file: ${path}`);
       return { text: files.get(path), encoding: "UTF-8", bom: false, eol: "lf" };
     },
+    save_session: (args) => {
+      localStorage.setItem("notepad-next.session", JSON.stringify(args?.snapshot));
+    },
+    load_session: () => {
+      const raw = localStorage.getItem("notepad-next.session");
+      return raw ? JSON.parse(raw) : { tabs: [], activeId: null, recentlyClosed: [] };
+    },
     get_settings: () => settings,
     update_settings: (args) => {
       settings = args?.settings as typeof settings;

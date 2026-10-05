@@ -15,6 +15,22 @@ export interface Doc {
   language: string;
   /** Set when eol/encoding changed since the last save, which also makes the doc dirty. */
   metaDirty: boolean;
+  /** True when a restored tab's file no longer exists on disk. */
+  missing: boolean;
+}
+
+export interface RestoredDoc {
+  id: string;
+  title: string;
+  path: string | null;
+  text: string;
+  savedText: string;
+  eol: Eol;
+  encoding: string;
+  bom: boolean;
+  language: string;
+  metaDirty: boolean;
+  missing: boolean;
 }
 
 export interface LoadedFile {
@@ -101,6 +117,7 @@ export class DocumentManager {
       bom: false,
       language: "Normal text",
       metaDirty: false,
+      missing: false,
     };
   }
 
@@ -117,6 +134,18 @@ export class DocumentManager {
     const doc = this.blank(`doc-${this.nextId++}`, basename(path));
     Object.assign(doc, { path, text: file.text, savedText: file.text, eol: file.eol, encoding: file.encoding, bom: file.bom });
     return this.add(doc);
+  }
+
+  /** Re-create a tab from a saved session, keeping its id so the active tab can be matched. */
+  restoreDoc(data: RestoredDoc): Doc {
+    const doc: Doc = { ...data, dirty: false };
+    this.refreshDirty(doc);
+    const n = /^doc-(\d+)$/.exec(data.id);
+    if (n) this.nextId = Math.max(this.nextId, Number(n[1]) + 1);
+    this.docs.push(doc);
+    if (!this.activeId) this.activeId = doc.id;
+    this.emit();
+    return doc;
   }
 
   activate(id: string): void {
