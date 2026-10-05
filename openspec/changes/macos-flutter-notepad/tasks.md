@@ -1,12 +1,12 @@
 ## 1. Scaffold and tooling (ADR-0001, ADR-0002)
 
-- [ ] 1.1 Create `notepad-next/` with a Tauri 2 + TypeScript (Vite) app; `npm run tauri dev` opens an empty window on macOS
+- [x] 1.1 Create `notepad-next/` with a Tauri 2 + TypeScript (Vite) app; `npm run tauri dev` opens an empty window on macOS
 - [x] 1.2 Configure Vitest and a sample passing test; `npm test` runs green
 - [x] 1.3 Configure `cargo test` with a sample passing test in `src-tauri`
 - [x] 1.4 Restrict Tauri capabilities so the webview has no direct filesystem scope (ADR-0002)
 - [x] 1.5 Add typed IPC client module wrapping Tauri `invoke` with a mockable interface for unit tests
 - [x] 1.6 Add GitHub Actions workflow running Vitest, `cargo test` and a build on macOS, Windows and Linux
-- [ ] 1.7 Set up WebdriverIO + `tauri-driver` for Linux/Windows end-to-end; decide and document the macOS end-to-end approach (design open question)
+- [x] 1.7 macOS-only end-to-end for now: Playwright (WebKit) against the Vite dev server with mocked IPC; WebdriverIO + `tauri-driver` for Linux/Windows deferred to a follow-up
 
 ## 2. Editor core (spec: editor-core)
 

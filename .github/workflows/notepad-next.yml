@@ -11,7 +11,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-22.04]
+        # macOS only for now; add windows-latest and ubuntu-22.04 when cross-platform testing starts.
+        os: [macos-latest]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -40,6 +41,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - run: npx playwright install webkit
+      - run: npm run test:e2e
       - run: cargo test
         working-directory: notepad-next/src-tauri
       - run: npm run tauri build -- --debug --no-bundle
