@@ -1,4 +1,4 @@
-# notepad-next
+# next-notepad
 
 A cross-platform (macOS first, then Linux and Windows) Notepad++-style editor built with
 **Tauri 2** (Rust backend) and **CodeMirror 6** (TypeScript frontend). See
@@ -81,3 +81,7 @@ Formatting parses and re-prints the JSON, so:
 | Join lines / duplicate line | ⌘J / ⇧⌘D | Ctrl+J / Ctrl+Shift+D |
 | Move line up / down | ⌥↑ / ⌥↓ | Alt+Up / Alt+Down |
 | Preferences | ⌘, | Ctrl+, |
+
+## App icon
+
+`design/app-icon.svg` is the source. `node design/render-icon.mjs` renders `design/app-icon.png`, and `npx tauri icon design/app-icon.png` regenerates everything in `src-tauri/icons/`.

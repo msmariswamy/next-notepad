@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "notepad-next",
+  "productName": "next-notepad",
   "version": "0.1.0",
-  "identifier": "com.notepadnext.app",
+  "identifier": "com.nextnotepad.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,9 +13,9 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "notepad-next",
-        "width": 800,
-        "height": 600
+        "title": "next-notepad",
+        "width": 1100,
+        "height": 720
       }
     ],
     "security": {
