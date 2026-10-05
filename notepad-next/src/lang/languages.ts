@@ -12,7 +12,7 @@ export interface LanguageDef {
 
 export const LANGUAGES: LanguageDef[] = [
   { name: PLAIN_TEXT, extensions: ["txt", "text", "log"], load: async () => [] },
-  { name: "JSON", extensions: ["json", "jsonc", "geojson", "webmanifest"], load: async () => (await import("@codemirror/lang-json")).json() },
+  { name: "JSON", extensions: ["json", "jsonc", "geojson", "webmanifest"], load: async () => [(await import("@codemirror/lang-json")).json(), (await import("../editor/jsonErrors")).jsonErrorMarks()] },
   { name: "JavaScript", extensions: ["js", "mjs", "cjs", "jsx"], load: async () => (await import("@codemirror/lang-javascript")).javascript({ jsx: true }) },
   { name: "TypeScript", extensions: ["ts", "mts", "cts", "tsx"], load: async () => (await import("@codemirror/lang-javascript")).javascript({ typescript: true, jsx: true }) },
   { name: "HTML", extensions: ["html", "htm", "xhtml"], load: async () => (await import("@codemirror/lang-html")).html() },

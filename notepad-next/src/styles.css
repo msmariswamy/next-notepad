@@ -75,3 +75,4 @@ dialog.find-dialog { position: fixed; right: 24px; bottom: 48px; left: auto; top
 .menu-nested.flip { left: auto; right: 100%; }
 .tab.missing .tab-title { color: #e67700; }
 #statusbar span:first-child { overflow: hidden; text-overflow: ellipsis; }
+.cm-json-error { text-decoration: underline wavy #e03131; text-underline-offset: 3px; }
