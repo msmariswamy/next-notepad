@@ -282,3 +282,11 @@ mod tests {
         assert!(read_file(&dir.path().join("nope.txt")).is_err());
     }
 }
+
+/// Move an unreadable store file aside as `<name>.corrupt` instead of deleting it,
+/// so the user can still inspect it. An older `.corrupt` file is overwritten.
+pub fn quarantine_corrupt(path: &Path) -> Result<(), String> {
+    let mut name = path.file_name().ok_or("path has no file name")?.to_os_string();
+    name.push(".corrupt");
+    fs::rename(path, path.with_file_name(name)).map_err(|e| e.to_string())
+}

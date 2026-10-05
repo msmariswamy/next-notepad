@@ -3,9 +3,14 @@ import { App } from "./app/app";
 import { createBrowserHost } from "./app/browserHost";
 import { tauriPlatform } from "./app/tauriPlatform";
 import { tauriIpc } from "./ipc";
+import { SettingsStore } from "./settings/store";
+import { openSettingsDialog } from "./settings/dialog";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 const host = inTauri ? { ipc: tauriIpc, platform: tauriPlatform } : createBrowserHost();
+
+const settings = new SettingsStore(host.ipc);
+await settings.load();
 
 const app = new App({
   editorParent: document.getElementById("editor")!,
@@ -14,8 +19,7 @@ const app = new App({
   manager: new DocumentManager(),
   platform: host.platform,
   ipc: host.ipc,
-  // Settings store arrives in group 4; prompt-on-close is the spec default.
-  settings: { silentClose: false },
+  settings,
 });
 app.start();
 app.view.focus();
@@ -24,7 +28,8 @@ app.view.focus();
 window.addEventListener("keydown", (e) => {
   if (!(e.metaKey || e.ctrlKey)) return;
   const key = e.key.toLowerCase();
-  if (key === "s") (e.preventDefault(), void app.save());
+  if (key === ",") (e.preventDefault(), openSettingsDialog(settings));
+  else if (key === "s") (e.preventDefault(), void app.save());
   else if (key === "o") (e.preventDefault(), void app.openFileDialog());
   else if (key === "n") (e.preventDefault(), app.newTab());
   else if (key === "w" && app.manager.activeId) (e.preventDefault(), void app.closeTab(app.manager.activeId));

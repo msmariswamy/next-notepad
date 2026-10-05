@@ -4,12 +4,10 @@ import { createEditorState } from "../editor/createEditor";
 import { DocumentManager, type LoadedFile } from "../docs/documentManager";
 import type { Ipc } from "../ipc";
 import { renderStatusBar } from "../statusbar";
+import type { SettingsSource } from "../settings/model";
 import type { Platform } from "./platform";
+import { applyToDocument, applyToView, settingsExtensions } from "./applySettings";
 import { renderTabBar } from "./tabBar";
-
-export interface AppSettings {
-  silentClose: boolean;
-}
 
 export interface AppDeps {
   editorParent: HTMLElement;
@@ -18,7 +16,7 @@ export interface AppDeps {
   manager: DocumentManager;
   platform: Platform;
   ipc: Ipc;
-  settings: AppSettings;
+  settings: SettingsSource;
 }
 
 /**
@@ -38,12 +36,15 @@ export class App {
 
   start(): void {
     this.manager.subscribe(() => this.render());
+    this.deps.settings.subscribe(() => this.applySettings());
+    this.applySettings();
     if (this.manager.docs.length === 0) this.manager.newDoc();
     else this.render();
   }
 
   private editorExtensions() {
     return [
+      ...settingsExtensions(this.deps.settings.get()),
       EditorView.updateListener.of((u) => {
         const id = this.shownId;
         if (!id) return;
@@ -74,6 +75,14 @@ export class App {
     const state = this.states.get(id) ?? createEditorState(text, this.editorExtensions());
     this.shownId = id;
     this.view.setState(state);
+    // A stored state keeps the settings it was created under; bring it up to date.
+    applyToView(this.view, this.deps.settings.get());
+  }
+
+  private applySettings(): void {
+    const dark = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches;
+    applyToDocument(document.documentElement, this.deps.settings.get(), dark);
+    applyToView(this.view, this.deps.settings.get());
   }
 
   private renderStatus(): void {
@@ -122,7 +131,7 @@ export class App {
   async closeTab(id: string): Promise<void> {
     const doc = this.manager.get(id);
     if (!doc) return;
-    const decision = this.manager.requestClose(id, { silentClose: this.deps.settings.silentClose });
+    const decision = this.manager.requestClose(id, { silentClose: this.deps.settings.get().silentClose });
     if (decision === "prompt") {
       const choice = await this.deps.platform.confirmUnsaved(doc.title);
       if (choice === "cancel") return;

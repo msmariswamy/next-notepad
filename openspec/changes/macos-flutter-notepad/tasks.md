@@ -28,10 +28,10 @@
 
 ## 4. Settings (spec: settings)
 
-- [ ] 4.1 Write tests for the settings store (defaults, merge, atomic write, corrupt-file fallback with `.corrupt` rename), then implement in Rust
-- [ ] 4.2 Implement the Settings dialog and persist changes immediately
-- [ ] 4.3 Add `silentClose` (default off), theme, font family/size, word wrap, show whitespace, and large-file threshold options
-- [ ] 4.4 Apply theme and font settings live to all open editors
+- [x] 4.1 Write tests for the settings store (defaults, merge, atomic write, corrupt-file fallback with `.corrupt` rename), then implement in Rust
+- [x] 4.2 Implement the Settings dialog and persist changes immediately
+- [x] 4.3 Add `silentClose` (default off), theme, font family/size, word wrap, show whitespace, and large-file threshold options
+- [x] 4.4 Apply theme and font settings live to all open editors
 
 ## 5. Session restore (spec: session-restore, ADR-0002)
 

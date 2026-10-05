@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockIpc, type MockIpc } from "../ipc";
 import { DocumentManager } from "../docs/documentManager";
 import { App } from "./app";
+import { DEFAULT_SETTINGS, type Settings } from "../settings/model";
 import type { Platform } from "./platform";
 
 let ipc: MockIpc;
 let platform: Platform;
-let settings: { silentClose: boolean };
+let settings: Settings;
 let app: App;
 
 function build() {
@@ -18,7 +19,7 @@ function build() {
     manager: new DocumentManager(),
     platform,
     ipc,
-    settings,
+    settings: { get: () => settings, subscribe: () => () => {} },
   });
   app.start();
 }
@@ -35,7 +36,7 @@ beforeEach(() => {
     pickSavePath: vi.fn(async () => "/tmp/saved.txt"),
     confirmUnsaved: vi.fn(async () => "cancel" as const),
   };
-  settings = { silentClose: false };
+  settings = { ...DEFAULT_SETTINGS };
   build();
 });
 
