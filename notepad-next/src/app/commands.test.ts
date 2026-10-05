@@ -384,6 +384,23 @@ describe("Edit commands via the registry", () => {
   });
 });
 
+describe("Help > Command Line Tool", () => {
+  it("is in the Help menu before About", () => {
+    expect(menuIds(MENU.find((m) => m.label === "Help")!.items)).toEqual(["help.commandLine", "help.about"]);
+  });
+
+  it("opens the dialog through the context", () => {
+    const openCommandLine = vi.fn();
+    const withDialog = createCommands({ app, finder: new FindController(app), settings: new SettingsStore(settingsIpc), openFind: vi.fn(), openSettings: vi.fn(), openCommandLine });
+    withDialog.find((c) => c.id === "help.commandLine")!.run();
+    expect(openCommandLine).toHaveBeenCalled();
+  });
+
+  it("does nothing, without failing, when no dialog is available", () => {
+    expect(() => cmd("help.commandLine").run()).not.toThrow();
+  });
+});
+
 describe("XML, YAML and Convert menus", () => {
   const menuOf = (label: string) => MENU.find((m) => m.label === label)!;
   const flat = (label: string) => menuIds(menuOf(label).items);

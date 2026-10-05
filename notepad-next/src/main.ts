@@ -22,6 +22,9 @@ import { MacroStore } from "./macro/store";
 import { dispatchShortcut, renderMenuBar } from "./app/menuBar";
 import { createToaster } from "./app/toast";
 import { restoreSession } from "./session/snapshot";
+import { OpenRequestHandler } from "./cli/openRequests";
+import { openCommandLineDialog } from "./cli/commandLineDialog";
+import { browserOpenHost, tauriOpenHost } from "./cli/hosts";
 import { applyDockVisibility, getDock } from "./layout/workspace";
 import { FunctionListPanel } from "./functionlist/panel";
 import { DocumentMapPanel } from "./documentmap/panel";
@@ -39,6 +42,9 @@ const manager = new DocumentManager();
 await restoreSession(manager, host.ipc).catch((e) => console.error("session restore failed", e));
 const session = new SessionClient(manager, host.ipc);
 
+// Created after the app (it needs the app), but the quit hook is registered with the app, so it is looked up lazily.
+let openRequests: OpenRequestHandler | null = null;
+
 const app = new App({
   editorParent: document.getElementById("editor")!,
   tabsEl: document.getElementById("tabs")!,
@@ -47,12 +53,21 @@ const app = new App({
   platform: host.platform,
   ipc: host.ipc,
   settings,
-  onQuit: () => session.flush(),
+  // A normal quit finishes every waiting `next-notepad --wait` first, so they exit 0 instead of seeing a dropped connection.
+  onQuit: async () => {
+    await openRequests?.finishAll();
+    await session.flush();
+  },
   notify: createToaster(document.getElementById("toast")!),
 });
 app.start();
 session.start();
 app.view.focus();
+
+// Requests from the `next-notepad` command and macOS open events (design D5).
+openRequests = new OpenRequestHandler(app, inTauri ? tauriOpenHost(host.ipc) : browserOpenHost());
+await openRequests.start();
+if (!inTauri && window.__nextNotepadTest) window.__nextNotepadTest.requestQuit = () => app.requestQuit();
 
 if (inTauri) {
   const { getCurrentWindow } = await import("@tauri-apps/api/window");
@@ -145,6 +160,7 @@ baseCommands = createCommands({
   openSettings: () => openSettingsDialog(settings),
   split,
   macros,
+  openCommandLine: () => void openCommandLineDialog({ ipc: host.ipc, copy: (text) => app.clipboard.writeText(text), notify }),
 });
 const commands = macros.wrapCommands(baseCommands);
 // Saved macros come and go, so the menu is rebuilt whenever the list changes.

@@ -32,6 +32,9 @@ Close the app and your unsaved tabs come back exactly as you left them.
   jump around with a filterable outline of functions, classes and headings, and scroll with a minimap.
 - **Base64 encode and decode** (standard and URL-safe) for the selection or the whole document, and your caret and
   scroll position come back with your tabs.
+- **Command line and `kubectl edit`**: `next-notepad [--wait] file...` opens files in the running app (starting it if needed).
+  With `--wait` it stays open until you close the file, so next-notepad works as `KUBE_EDITOR`, `GIT_EDITOR` or `EDITOR`.
+  Help > Command Line Tool… installs the command (macOS) and shows the line to paste.
 - **Editing basics**: tabs, multiple carets, column selection, folding, syntax highlighting for 16 languages, light and
   dark themes, word wrap, show all characters (spaces, tabs, line endings), encoding and line-ending conversion.
 

@@ -83,6 +83,30 @@ cd src-tauri && cargo test   # Rust backend
   invalid input is never modified and the reason is shown.
 - The caret and scroll position of every tab are stored with the session and restored on launch.
 
+### Command line
+
+```bash
+next-notepad notes.txt              # open files in the running app (starts it if it is closed)
+next-notepad --wait deployment.yaml # stay open until the file's tab is closed
+next-notepad --help
+```
+
+`--wait` is what makes next-notepad usable as an editor for other tools:
+
+```bash
+export KUBE_EDITOR="next-notepad --wait"   # kubectl edit cm my-config
+export GIT_EDITOR="next-notepad --wait"    # git commit
+```
+
+Help > **Command Line Tool…** shows the full path of the executable, installs the `next-notepad` command on macOS (a link in
+`/usr/local/bin`, or `~/.local/bin` if that is not writable), and gives ready-to-paste `KUBE_EDITOR` lines for zsh/bash,
+PowerShell and `setx`. Closing the tab ends the wait; if the tab has unsaved changes you are asked first, and closing without
+saving leaves the file unchanged, so `kubectl` cancels the edit. Quitting the app also ends the wait. If the app crashes while a
+command is waiting, the command exits with code 1 so the calling tool does not apply a half-edited file.
+
+Exit codes: 0 success, 1 failure, 2 usage error, 3 the app could not be started or reached. The command talks to the app
+over a loopback-only socket protected by a token in `cli-server.json` in the app-data directory (ADR-0009).
+
 ### JSON formatting notes
 
 Formatting parses and re-prints the JSON, so:

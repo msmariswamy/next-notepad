@@ -25,6 +25,12 @@ encoding_rs = "0.8.42"
 tempfile = "3.27.0"
 tauri-plugin-dialog = "2.8.1"
 regex = "1.13.1"
+# Random token for the command-line server (already in the dependency tree through tauri).
+getrandom = "0.3"
+
+[target.'cfg(windows)'.dependencies]
+# Attach to the parent console so `next-notepad --help` prints in the terminal that ran it.
+windows-sys = { version = "0.59", features = ["Win32_System_Console"] }
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

@@ -26,6 +26,9 @@ export function createBrowserHost(): { ipc: Ipc; platform: Platform; filesApi: F
       const raw = localStorage.getItem("notepad-next.session");
       return raw ? JSON.parse(raw) : { tabs: [], activeId: null, recentlyClosed: [] };
     },
+    // The command-line tool dialog: a macOS-like answer, since the browser harness has no real executable.
+    cli_info: () => ({ exePath: "/Applications/next-notepad.app/Contents/MacOS/next-notepad", platform: "mac", canInstall: true, installedLink: null }),
+    install_cli_command: () => ({ link: "/usr/local/bin/next-notepad", dir: "/usr/local/bin", pathHint: null }),
     load_macros: () => {
       const raw = localStorage.getItem("notepad-next.macros");
       return raw ? JSON.parse(raw) : { version: 1, macros: [] };

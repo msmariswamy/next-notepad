@@ -34,6 +34,8 @@ export interface CommandContext {
   openSettings(): void;
   /** Split view controller; absent in contexts that have no second pane (some tests). */
   split?: SplitView;
+  /** Opens Help > Command Line Tool…; absent in contexts without it (some tests). */
+  openCommandLine?: () => void;
   /** Macro controller; absent in contexts without macro support (some tests). */
   macros?: MacroController;
 }
@@ -238,6 +240,7 @@ export function createCommands(ctx: CommandContext): Command[] {
     { id: "macro.manage", label: "Manage Saved Macros…", run: () => ctx.macros?.manage() },
     { id: "macro.none", label: "(no saved macros)", run: () => {} },
     // Help
+    { id: "help.commandLine", label: "Command Line Tool…", run: () => ctx.openCommandLine?.() },
     { id: "help.about", label: "About next-notepad", run: () => void openAboutDialog() },
     // Settings
     { id: "settings.open", label: "Preferences…", accelerator: "Mod+,", run: () => ctx.openSettings() },
@@ -344,7 +347,7 @@ export function buildMenu(savedMacroIds: string[] = []): MenuModel[] {
     ],
   },
   { label: "Settings", items: ["settings.open"] },
-  { label: "Help", items: ["help.about"] },
+  { label: "Help", items: ["help.commandLine", "help.about"] },
   ];
 }
 
