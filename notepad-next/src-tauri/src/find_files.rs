@@ -65,7 +65,7 @@ pub struct Filter {
 }
 
 pub fn parse_filters(spec: &str) -> Vec<Filter> {
-    spec.split(|c| c == ';' || c == ',' || c == ' ')
+    spec.split([';', ',', ' '])
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .map(|s| match s.strip_prefix('!') {

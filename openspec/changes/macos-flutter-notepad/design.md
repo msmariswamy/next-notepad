@@ -131,11 +131,11 @@ Marks use a `StateField` of decorations (five styles = five CSS classes); bookma
 Detect on open (BOM, then UTF-8 validity, then fallback) in Rust with `encoding_rs`; the editor stores text as UTF-16/JS strings with the encoding and EOL held as per-document metadata for round-trip saving. The status bar shows both.
 
 **D11. Test strategy (TDD).**
-- Vitest: `regex-compat`, JSON tools, document manager and session client logic, mark extensions.
-- `cargo test`: session store (atomic write, crash recovery), file walker, encoding detection, search engine.
-- WebdriverIO + `tauri-driver`: end-to-end flows (quit/relaunch restore, find/replace dialog, JSON format, close prompts).
-- GitHub Actions matrix on macOS, Windows and Linux.
-Each spec scenario maps to at least one test.
+- Vitest (jsdom): `regex-compat`, JSON tools, formatters, document manager, session client, commands and menus, edit operations, mark extensions.
+- `cargo test`: session store (atomic write, crash recovery), settings, file walker, encoding detection, search engine, regex-compat.
+- End-to-end: **Playwright in WebKit** against the Vite dev server, with the Tauri IPC replaced by an in-memory host (`createBrowserHost`). WebKit is the engine family of Tauri's macOS webview. The real shell (native dialogs, clipboard permission, IPC channels, window close) is covered by a manual checklist in `verification.md`. See ADR-0004. WebdriverIO + `tauri-driver` for Linux and Windows is a follow-up.
+- GitHub Actions: tests on macOS now; Windows and Linux are added when cross-platform testing starts (ADR-0004).
+Each spec scenario maps to at least one test; known gaps are listed in `verification.md`.
 
 ## Risks / Trade-offs
 
