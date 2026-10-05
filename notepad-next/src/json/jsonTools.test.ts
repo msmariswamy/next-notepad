@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { minify, prettyPrint, validate } from "./jsonTools";
+import { escapeAsJsonString, minify, prettyPrint, sortKeys, unescapeJsonString, validate } from "./jsonTools";
 
 describe("validate", () => {
   it("accepts well-formed documents of every value type", () => {
@@ -123,5 +123,55 @@ describe("minify", () => {
 
   it("does not modify invalid JSON", () => {
     expect(minify("{oops").ok).toBe(false);
+  });
+});
+
+describe("prettyPrint indent styles", () => {
+  it("supports 4 spaces and tabs", () => {
+    expect(prettyPrint('{"a":1}', "    ")).toEqual({ ok: true, text: '{\n    "a": 1\n}' });
+    expect(prettyPrint('{"a":1}', "\t")).toEqual({ ok: true, text: '{\n\t"a": 1\n}' });
+  });
+});
+
+describe("sortKeys", () => {
+  it("orders keys ascending at every level and keeps array order", () => {
+    const r = sortKeys('{"b":1,"a":{"d":1,"c":2},"arr":[{"z":1,"y":2},3]}');
+    expect(r.ok && r.text).toBe('{\n  "a": {\n    "c": 2,\n    "d": 1\n  },\n  "arr": [\n    {\n      "y": 2,\n      "z": 1\n    },\n    3\n  ],\n  "b": 1\n}');
+  });
+
+  it("sorts by code unit (uppercase before lowercase) and numeric-looking keys as strings", () => {
+    const r = sortKeys('{"b":1,"B":2,"10":3,"9":4}');
+    expect(r.ok && r.text).toBe('{\n  "10": 3,\n  "9": 4,\n  "B": 2,\n  "b": 1\n}');
+  });
+
+  it("does not modify invalid JSON", () => {
+    expect(sortKeys("{oops").ok).toBe(false);
+  });
+
+  it("keeps number text as written", () => {
+    const r = sortKeys('{"b":1.0,"a":1e2}');
+    expect(r.ok && r.text).toBe('{\n  "a": 1e2,\n  "b": 1.0\n}');
+  });
+});
+
+describe("escape / unescape as a JSON string", () => {
+  it("escapes quotes, backslashes and newlines", () => {
+    expect(escapeAsJsonString('say "hi"\n')).toBe('"say \\"hi\\"\\n"');
+    expect(escapeAsJsonString("a\\b")).toBe('"a\\\\b"');
+  });
+
+  it("round-trips", () => {
+    for (const s of ['say "hi"\n', "tab\tand\\backslash", "é 😀", ""]) {
+      expect(unescapeJsonString(escapeAsJsonString(s))).toBe(s);
+    }
+  });
+
+  it("unescapes an escaped body without quotes", () => {
+    expect(unescapeJsonString('line1\\nline2 \\"q\\"')).toBe('line1\nline2 "q"');
+  });
+
+  it("returns null for text that is not a JSON string", () => {
+    expect(unescapeJsonString('bad \\x escape')).toBeNull();
+    expect(unescapeJsonString('"unterminated')).toBeNull();
   });
 });

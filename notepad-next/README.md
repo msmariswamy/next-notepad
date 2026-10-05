@@ -41,7 +41,22 @@ cd src-tauri && cargo test   # Rust backend
 - Find in Files runs in Rust; patterns that use lookahead, lookbehind or backreferences (which Rust's regex
   engine lacks) are matched in the JavaScript engine over file contents read by Rust, so results are identical
   to in-editor search.
-- JSON menu: **Pretty-print**, **Minify**, **Validate** (reports line and column and moves the caret there).
+- JSON menu: **Pretty-print** (2 spaces / 4 spaces / tabs), **Compress** (minify), **Sort Keys**, **Escape / Unescape as JSON String**
+  and **Validate** (reports line and column and moves the caret there).
+- **Format Document** (Edit menu, ⌥⌘L / Ctrl+Alt+L) for JSON, JavaScript, TypeScript, HTML, CSS, XML, YAML and Java, using the
+  tab width / tabs settings. JavaScript, TypeScript, CSS and YAML use Prettier (loaded on first use); HTML, XML and Java use
+  built-in formatters that always put each element or block on its own indented line. Invalid code is never modified and
+  the error position is shown.
+- **Language auto-detect**: an untitled tab (or a file with an unknown extension) whose content looks like JSON, XML, HTML,
+  YAML or Java is switched to that language automatically. Your own choice from the Language menu and a recognised file
+  extension always win. Format Document detects first when the tab is still plain text.
+- **Edit menu** modelled on Notepad++: Cut/Copy/Paste/Delete, Convert Case (8 modes), Line Operations (duplicate, remove
+  duplicates, join, split, move, remove empty, insert blank, reverse, randomize and 14 sort orders), Blank Operations (trim,
+  EOL to space, TAB/space conversion), Indent / Outdent and Comment toggles.
+- **Search > Bookmark**: toggle / next / previous / clear, plus cut, copy, paste-replace, remove, remove-non-bookmarked and
+  inverse for bookmarked lines.
+- **View**: Word Wrap, Show Whitespace, **Show All Characters** (spaces, tabs and LF / CRLF / CR markers; the text itself is
+  never changed) and theme. Settings has tab width and an option to insert a tab character instead of spaces.
 
 ### JSON formatting notes
 
@@ -61,4 +76,8 @@ Formatting parses and re-prints the JSON, so:
 | Find next / previous | ⌘G / ⇧⌘G | Ctrl+G / Ctrl+Shift+G |
 | Bookmark toggle / next / previous | ⌘F2 / F2 / ⇧F2 | Ctrl+F2 / F2 / Shift+F2 |
 | JSON pretty-print / minify / validate | ⌥⌘J / ⌥⇧⌘J / ⌥⌘V | Ctrl+Alt+J / Ctrl+Alt+Shift+J / Ctrl+Alt+V |
+| Format Document | ⌥⌘L | Ctrl+Alt+L |
+| Upper / lower case | ⇧⌘U / ⌘U | Ctrl+Shift+U / Ctrl+U |
+| Join lines / duplicate line | ⌘J / ⇧⌘D | Ctrl+J / Ctrl+Shift+D |
+| Move line up / down | ⌥↑ / ⌥↓ | Alt+Up / Alt+Down |
 | Preferences | ⌘, | Ctrl+, |

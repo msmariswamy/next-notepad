@@ -5,6 +5,7 @@ import type { CaseMode, SortKind } from "../edit/transforms";
 import type { App } from "./app";
 import { LANGUAGES } from "../lang/languages";
 import { runJsonCommand } from "../json/jsonCommands";
+import { runFormatDocument } from "../format/formatCommand";
 import type { FindController } from "../search/findController";
 import type { FindTab } from "../search/findDialog";
 import type { SettingsStore } from "../settings/store";
@@ -195,9 +196,16 @@ export function createCommands(ctx: CommandContext): Command[] {
       run: () => app.setLanguage(l.name),
       checked: () => doc()?.language === l.name,
     })),
+    // Format
+    { id: "format.document", label: "Format Document", accelerator: "Mod+Alt+L", run: async () => void (await runFormatDocument(app, { tabWidth: settings.get().tabWidth, useTabs: settings.get().useTabs })) },
     // JSON
-    { id: "json.pretty", label: "Pretty-print", accelerator: "Mod+Alt+J", run: () => void runJsonCommand(app, "pretty") },
-    { id: "json.minify", label: "Minify", accelerator: "Mod+Alt+Shift+J", run: () => void runJsonCommand(app, "minify") },
+    { id: "json.pretty", label: "Pretty-print (2 spaces)", accelerator: "Mod+Alt+J", run: () => void runJsonCommand(app, "pretty") },
+    { id: "json.pretty4", label: "Pretty-print (4 spaces)", run: () => void runJsonCommand(app, "pretty4") },
+    { id: "json.prettyTabs", label: "Pretty-print (tabs)", run: () => void runJsonCommand(app, "prettyTabs") },
+    { id: "json.minify", label: "Compress (minify)", accelerator: "Mod+Alt+Shift+J", run: () => void runJsonCommand(app, "minify") },
+    { id: "json.sortKeys", label: "Sort Keys", run: () => void runJsonCommand(app, "sortKeys") },
+    { id: "json.escape", label: "Escape as JSON String", run: () => void runJsonCommand(app, "escape") },
+    { id: "json.unescape", label: "Unescape JSON String", run: () => void runJsonCommand(app, "unescape") },
     { id: "json.validate", label: "Validate", accelerator: "Mod+Alt+V", run: () => void runJsonCommand(app, "validate") },
     // Settings
     { id: "settings.open", label: "Preferences…", accelerator: "Mod+,", run: () => ctx.openSettings() },
@@ -256,6 +264,8 @@ export const MENU: MenuModel[] = [
       },
       { label: "Indent", items: ["indent.more", "indent.less"] },
       { label: "Comment/Uncomment", items: ["comment.line", "comment.block"] },
+      "-",
+      "format.document",
     ],
   },
   {
@@ -277,7 +287,7 @@ export const MENU: MenuModel[] = [
   { label: "View", items: ["view.wordWrap", "view.showWhitespace", "view.showAllCharacters", "-", "view.theme.system", "view.theme.light", "view.theme.dark"] },
   { label: "Encoding", items: ["eol.lf", "eol.crlf", "eol.cr", "-", ...ENCODINGS.map((e) => e.id)] },
   { label: "Language", items: LANGUAGES.map((l) => `lang.${l.name}`) },
-  { label: "JSON", items: ["json.pretty", "json.minify", "json.validate"] },
+  { label: "JSON", items: ["json.pretty", "json.pretty4", "json.prettyTabs", "json.minify", "json.sortKeys", "-", "json.escape", "json.unescape", "-", "json.validate"] },
   { label: "Settings", items: ["settings.open"] },
 ];
 

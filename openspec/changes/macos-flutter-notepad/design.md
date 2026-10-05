@@ -153,8 +153,11 @@ Greenfield app, so there is nothing to migrate and nothing existing to roll back
 
 ## Open Questions
 
-- `tauri-driver` does not currently support macOS desktop. Do we accept macOS end-to-end coverage via CI on Linux/Windows only, or add a macOS-specific approach?
-- Should the "recently closed" list in silent mode have a visible UI in this change, or only exist in the store for now?
-- How large must a file be before we warn or refuse (initial proposal: warn at 50 MB)?
-- App name and bundle identifier for `notepad-next/` (trademark considerations around "Notepad++" in the product name).
-- No in-force ADRs exist yet; the adr step will record D1, D2 and D6 as the durable decisions.
+Resolved during implementation:
+
+- **macOS end-to-end tests:** `tauri-driver` has no macOS support, so UI flows run in Playwright WebKit against the Vite dev server with an in-memory host (see `notepad-next/README.md`). Linux/Windows `tauri-driver` + WebdriverIO is a follow-up.
+- **Recently-closed list UI:** not in this change. In silent-close mode the text is kept in the session store (bounded to 20) and survives restarts; a "Reopen closed tab" UI is a follow-up.
+- **Large-file threshold:** 50 MB by default, configurable in Settings; the warning never blocks when the size is unknown.
+- **App name / bundle identifier:** working name `notepad-next`, identifier `com.notepadnext.app`. Whether a product name may contain "Notepad++" (trademark) is **still open** and needs the owner's decision before any release.
+- **Menus:** an in-page menu bar is used on all platforms (consistent and testable). A native macOS menu bar is a follow-up.
+- No in-force ADRs were superseded; ADR-0001 to ADR-0003 stand.

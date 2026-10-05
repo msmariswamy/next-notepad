@@ -1,7 +1,11 @@
 import type { App } from "../app/app";
-import { minify, prettyPrint, validate, type JsonError } from "./jsonTools";
+import { PLAIN_TEXT } from "../lang/languages";
+import { escapeAsJsonString, minify, prettyPrint, sortKeys, unescapeJsonString, validate, type JsonError } from "./jsonTools";
 
-export type JsonAction = "pretty" | "minify" | "validate";
+export type JsonAction = "pretty" | "pretty4" | "prettyTabs" | "minify" | "sortKeys" | "escape" | "unescape" | "validate";
+
+const INDENT: Record<string, string> = { pretty: "  ", pretty4: "    ", prettyTabs: "\t" };
+const DONE: Record<string, string> = { pretty: "JSON formatted", pretty4: "JSON formatted", prettyTabs: "JSON formatted", minify: "JSON minified", sortKeys: "JSON keys sorted" };
 
 export interface CommandResult {
   ok: boolean;
@@ -35,8 +39,26 @@ export function runJsonCommand(app: App, action: JsonAction): CommandResult {
     const r = validate(text);
     return r.ok ? report({ ok: true, message: "JSON is valid" }) : fail(r);
   }
-  const r = action === "pretty" ? prettyPrint(text) : minify(text);
+
+  const replace = (next: string) => {
+    if (next !== text) app.applyChangesToDoc(doc.id, [{ from: range.from, to: range.to, insert: next }]);
+  };
+
+  if (action === "escape") {
+    replace(escapeAsJsonString(text));
+    return report({ ok: true, message: "Escaped as a JSON string" });
+  }
+  if (action === "unescape") {
+    const raw = unescapeJsonString(text);
+    if (raw === null) return report({ ok: false, message: "Not a valid JSON string" });
+    replace(raw);
+    return report({ ok: true, message: "Unescaped JSON string" });
+  }
+
+  const r = action === "minify" ? minify(text) : action === "sortKeys" ? sortKeys(text) : prettyPrint(text, INDENT[action]);
   if (!r.ok) return fail(r);
-  if (r.text !== text) app.applyChangesToDoc(doc.id, [{ from: range.from, to: range.to, insert: r.text }]);
-  return report({ ok: true, message: action === "pretty" ? "JSON formatted" : "JSON minified" });
+  replace(r.text);
+  // Valid JSON in a plain-text tab: switch the language so the text is highlighted as JSON from now on.
+  if (doc.language === PLAIN_TEXT) app.manager.setLanguage(doc.id, "JSON");
+  return report({ ok: true, message: DONE[action] });
 }

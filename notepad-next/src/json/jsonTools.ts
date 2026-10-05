@@ -212,3 +212,49 @@ export function minify(text: string): JsonResult {
   const r = parse(text);
   return r.ok ? { ok: true, text: print(r.node, "", 0) } : r;
 }
+
+function sortNode(node: Node): Node {
+  if (node.t === "lit") return node;
+  if (node.t === "arr") return { t: "arr", items: node.items.map(sortNode) };
+  const entries = node.entries
+    .map(([k, v]): [string, Node] => [k, sortNode(v)])
+    .sort((a, b) => {
+      const ka = keyValue(a[0]);
+      const kb = keyValue(b[0]);
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+  return { t: "obj", entries };
+}
+
+/** Sort object keys ascending, recursively (arrays keep their order); the result is pretty-printed. */
+export function sortKeys(text: string, indent = "  "): JsonResult {
+  const r = parse(text);
+  return r.ok ? { ok: true, text: print(sortNode(r.node), indent, 0) } : r;
+}
+
+/** Turn arbitrary text into a JSON string literal (quotes, backslashes, newlines and control characters escaped). */
+export function escapeAsJsonString(text: string): string {
+  return JSON.stringify(text);
+}
+
+/**
+ * Inverse of escapeAsJsonString. Accepts a quoted literal, or just the escaped body without quotes.
+ * Returns null when the text is not a valid JSON string.
+ */
+export function unescapeJsonString(text: string): string | null {
+  const t = text.trim();
+  const attempt = (candidate: string): string | null => {
+    try {
+      const v = JSON.parse(candidate);
+      return typeof v === "string" ? v : null;
+    } catch {
+      return null;
+    }
+  };
+  if (t.length >= 2 && t.startsWith('"') && t.endsWith('"')) {
+    const quoted = attempt(t);
+    if (quoted !== null) return quoted;
+  }
+  // Escaped body without surrounding quotes; raw newlines are not valid inside a JSON string.
+  return attempt(`"${t.replace(/\n/g, "\\n").replace(/\r/g, "\\r")}"`);
+}

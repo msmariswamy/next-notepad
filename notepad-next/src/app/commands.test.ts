@@ -259,7 +259,7 @@ describe("Edit and Search submenus (Notepad++ layout)", () => {
     const top = [...nav().querySelector(".menu.open .menu-dropdown")!.children]
       .filter((c) => c.classList.contains("menu-item") || c.classList.contains("menu-submenu"))
       .map((c) => (c.querySelector(".menu-label") as HTMLElement).textContent);
-    expect(top).toEqual(["Undo", "Redo", "Cut", "Copy", "Paste", "Delete", "Select All", "Convert Case to", "Line Operations", "Blank Operations", "Indent", "Comment/Uncomment"]);
+    expect(top).toEqual(["Undo", "Redo", "Cut", "Copy", "Paste", "Delete", "Select All", "Convert Case to", "Line Operations", "Blank Operations", "Indent", "Comment/Uncomment", "Format Document"]);
   });
 
   it("hovering a submenu opens it to the side and lists its commands", () => {

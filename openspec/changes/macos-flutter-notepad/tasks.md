@@ -97,10 +97,10 @@
 
 ## 12. Hardening and release readiness
 
-- [ ] 12.1 Verify every spec scenario maps to at least one automated test; list any gaps
+- [x] 12.1 Verify every spec scenario maps to at least one automated test; list any gaps
 - [ ] 12.2 Run `openspec validate macos-flutter-notepad --type change --strict`
 - [ ] 12.3 Run the full test suite on macOS, Windows and Linux in CI
-- [ ] 12.4 Resolve design open questions: macOS end-to-end approach, recently-closed list UI, large-file threshold, app name and bundle identifier
+- [x] 12.4 Resolve design open questions: macOS end-to-end approach, recently-closed list UI, large-file threshold, app name and bundle identifier
 - [x] 12.5 Write `notepad-next/README.md` with build, run and test instructions
 
 ## 13. Text transforms (spec: text-transforms)
@@ -134,8 +134,8 @@
 
 ## 17. Code formatting and JSON extras (specs: code-formatting, json-tools)
 
-- [ ] 17.1 Add Prettier (standalone, lazily loaded) for JavaScript, TypeScript, HTML, CSS and YAML; formatter for XML; brace-based formatter for Java
-- [ ] 17.2 Write tests, then implement the format dispatcher: language to formatter, tab width, errors reported without modifying the text
-- [ ] 17.3 Format Document command (Edit > Format, Cmd/Ctrl+Alt+L) with auto-detect fallback and one undo step
-- [ ] 17.4 JSON extras: Pretty-print 2 spaces / 4 spaces / tabs, Sort Keys, Escape / Unescape string; JSON commands set the language to JSON for valid JSON
-- [ ] 17.5 End-to-end tests for each language formatter and the JSON menu
+- [x] 17.1 Add Prettier (standalone, lazily loaded) for JavaScript, TypeScript, HTML, CSS and YAML; formatter for XML; brace-based formatter for Java
+- [x] 17.2 Write tests, then implement the format dispatcher: language to formatter, tab width, errors reported without modifying the text
+- [x] 17.3 Format Document command (Edit > Format, Cmd/Ctrl+Alt+L) with auto-detect fallback and one undo step
+- [x] 17.4 JSON extras: Pretty-print 2 spaces / 4 spaces / tabs, Sort Keys, Escape / Unescape string; JSON commands set the language to JSON for valid JSON
+- [x] 17.5 End-to-end tests for each language formatter and the JSON menu
