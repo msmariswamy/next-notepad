@@ -50,8 +50,8 @@ describe("command registry", () => {
     expect(new Set(accels).size).toBe(accels.length);
   });
 
-  it("menus cover File, Edit, Search, View, Encoding, Language, JSON, Settings and Help", () => {
-    expect(MENU.map((m) => m.label)).toEqual(["File", "Edit", "Search", "View", "Encoding", "Language", "JSON", "Settings", "Help"]);
+  it("menus cover File, Edit, Search, View, Encoding, Language, JSON, Macro, Settings and Help", () => {
+    expect(MENU.map((m) => m.label)).toEqual(["File", "Edit", "Search", "View", "Encoding", "Language", "JSON", "Macro", "Settings", "Help"]);
   });
 });
 
@@ -105,6 +105,25 @@ describe("commands", () => {
     expect(settingsIpc.calls[settingsIpc.calls.length - 1]).toMatchObject({ command: "update_settings", args: { settings: { wordWrap: true } } });
     await cmd("view.theme.dark").run();
     expect(cmd("view.theme.dark").checked!()).toBe(true);
+  });
+
+  it("View > Function List and Document Map are checkable, default off, and persist through settings", async () => {
+    expect([cmd("view.functionList").checked!(), cmd("view.documentMap").checked!()]).toEqual([false, false]);
+    await cmd("view.functionList").run();
+    expect(cmd("view.functionList").checked!()).toBe(true);
+    expect(settingsIpc.calls[settingsIpc.calls.length - 1]).toMatchObject({ command: "update_settings", args: { settings: { showFunctionList: true } } });
+    await cmd("view.documentMap").run();
+    expect(cmd("view.documentMap").checked!()).toBe(true);
+    await cmd("view.functionList").run();
+    expect(cmd("view.functionList").checked!()).toBe(false);
+  });
+
+  it("View has the four split commands, which are harmless without a second pane", () => {
+    const ids = ["view.splitVertical", "view.splitHorizontal", "view.closeSplit", "view.moveToOtherPane"];
+    for (const id of ids) {
+      expect(cmd(id), id).toBeDefined();
+      expect(() => cmd(id).run()).not.toThrow();
+    }
   });
 
   it("Edit > Select All selects the document", () => {
@@ -253,13 +272,13 @@ describe("Edit and Search submenus (Notepad++ layout)", () => {
   const title = (name: string) => [...nav().querySelectorAll(".menu-title")].find((t) => t.textContent === name) as HTMLElement;
   const submenu = (name: string) => nav().querySelector(`[data-submenu="${name}"]`) as HTMLElement;
 
-  it("Edit lists clipboard commands and the five submenus", () => {
+  it("Edit lists clipboard commands and the six submenus", () => {
     renderMenuBar(nav(), commands);
     title("Edit").click();
     const top = [...nav().querySelector(".menu.open .menu-dropdown")!.children]
       .filter((c) => c.classList.contains("menu-item") || c.classList.contains("menu-submenu"))
       .map((c) => (c.querySelector(".menu-label") as HTMLElement).textContent);
-    expect(top).toEqual(["Undo", "Redo", "Cut", "Copy", "Paste", "Delete", "Select All", "Convert Case to", "Line Operations", "Blank Operations", "Indent", "Comment/Uncomment", "Format Document"]);
+    expect(top).toEqual(["Undo", "Redo", "Cut", "Copy", "Paste", "Delete", "Select All", "Convert Case to", "Line Operations", "Blank Operations", "Indent", "Comment/Uncomment", "Base64", "Format Document"]);
   });
 
   it("hovering a submenu opens it to the side and lists its commands", () => {

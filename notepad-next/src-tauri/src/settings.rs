@@ -32,6 +32,10 @@ pub struct Settings {
     /// Tab key inserts a tab character instead of spaces.
     pub use_tabs: bool,
     pub large_file_threshold_bytes: u64,
+    /// Right-docked Function List panel (spec: view-options).
+    pub show_function_list: bool,
+    /// Right-docked Document Map panel (spec: view-options).
+    pub show_document_map: bool,
 }
 
 impl Default for Settings {
@@ -47,6 +51,8 @@ impl Default for Settings {
             tab_width: 4,
             use_tabs: false,
             large_file_threshold_bytes: 50 * 1024 * 1024,
+            show_function_list: false,
+            show_document_map: false,
         }
     }
 }
@@ -106,6 +112,28 @@ mod tests {
         assert_eq!(s.theme, Theme::System);
         assert_eq!((s.tab_width, s.use_tabs, s.show_all_characters), (4, false, false));
         assert_eq!(s.large_file_threshold_bytes, 50 * 1024 * 1024);
+        assert_eq!((s.show_function_list, s.show_document_map), (false, false), "side panels default to hidden");
+    }
+
+    #[test]
+    fn older_file_without_panel_keys_loads_with_panels_hidden() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        fs::write(&path, r#"{"silentClose": true, "wordWrap": true}"#).unwrap();
+        let s = load(&path);
+        assert!(s.word_wrap);
+        assert_eq!((s.show_function_list, s.show_document_map), (false, false));
+    }
+
+    #[test]
+    fn panel_visibility_roundtrips_with_camel_case_keys() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        let s = Settings { show_function_list: true, show_document_map: true, ..Settings::default() };
+        save(&path, &s).unwrap();
+        let text = fs::read_to_string(&path).unwrap();
+        assert!(text.contains("\"showFunctionList\"") && text.contains("\"showDocumentMap\""));
+        assert_eq!(load(&path), s);
     }
 
     #[test]

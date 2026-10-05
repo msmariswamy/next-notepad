@@ -1,14 +1,15 @@
 import { Compartment, EditorState } from "@codemirror/state";
 import { classHighlighter } from "@lezer/highlight";
 import { syntaxHighlighting } from "@codemirror/language";
-import { EditorView } from "@codemirror/view";
 import { isolateHistory } from "@codemirror/commands";
+import { EditorView, type ViewUpdate } from "@codemirror/view";
+import { undoGrouping, type UndoGroup } from "../macro/undoGroup";
 import { createEditorState } from "../editor/createEditor";
 import { marksExtension } from "../editor/marks";
 import { exceedsLargeFileLimit } from "../files/limits";
 import { detectFromContent } from "../lang/detect";
 import { PLAIN_TEXT, detectLanguage, hasRecognisedExtension, loadLanguageExtension } from "../lang/languages";
-import { DocumentManager, type LoadedFile } from "../docs/documentManager";
+import { DocumentManager, type LoadedFile, type ViewState } from "../docs/documentManager";
 import type { Ipc } from "../ipc";
 import { renderStatusBar } from "../statusbar";
 import type { SettingsSource } from "../settings/model";
@@ -47,10 +48,15 @@ export class App {
   /** Language each tab's editor state is currently configured with. */
   private appliedLanguage = new Map<string, string>();
   private appliedEol = new Map<string, string>();
+  /** True while a restored scroll position is being applied, so the resulting events do not overwrite it with 0. */
+  private restoringView = false;
+  private updateListeners = new Set<(u: ViewUpdate) => void>();
+  private undoGroup: UndoGroup | null = null;
 
   constructor(private deps: AppDeps) {
     this.manager = deps.manager;
     this.view = new EditorView({ state: createEditorState(), parent: deps.editorParent });
+    this.view.scrollDOM.addEventListener("scroll", () => this.captureView());
   }
 
   start(): void {
@@ -61,17 +67,41 @@ export class App {
     else this.render();
   }
 
+  /**
+   * Everything edited until endUndoGroup() becomes one undo step (a macro playback). Nesting is not supported:
+   * the caller that opened the group closes it.
+   */
+  beginUndoGroup(): void {
+    this.undoGroup = { time: Date.now(), first: true };
+  }
+
+  endUndoGroup(): void {
+    if (!this.undoGroup) return;
+    this.undoGroup = null;
+    // Close the event so the next thing the user types starts a new one instead of joining the group.
+    this.view.dispatch({ annotations: isolateHistory.of("after") });
+  }
+
+  /** Subscribe to every editor update (edits, selection, language/parse changes) of whichever tab is shown. */
+  onEditorUpdate(fn: (u: ViewUpdate) => void): () => void {
+    this.updateListeners.add(fn);
+    return () => this.updateListeners.delete(fn);
+  }
+
   private editorExtensions() {
     return [
       ...settingsExtensions(this.deps.settings.get(), this.manager.active?.eol ?? "lf"),
       ...marksExtension(),
+      undoGrouping(() => this.undoGroup),
       syntaxHighlighting(classHighlighter),
       this.languageCompartment.of([]),
       EditorView.updateListener.of((u) => {
+        for (const fn of this.updateListeners) fn(u);
         const id = this.shownId;
         if (!id) return;
         if (u.docChanged) this.manager.setText(id, u.state.doc.toString());
         else if (u.selectionSet) this.renderStatus();
+        if (u.docChanged || u.selectionSet) this.captureView();
       }),
     ];
   }
@@ -102,11 +132,41 @@ export class App {
 
   private show(id: string, text: string): void {
     if (this.shownId) this.states.set(this.shownId, this.view.state);
-    const state = this.states.get(id) ?? createEditorState(text, this.editorExtensions());
+    const stored = this.states.get(id);
+    const state = stored ?? createEditorState(text, this.editorExtensions());
     this.shownId = id;
     this.view.setState(state);
     // A stored state keeps the settings it was created under; bring it up to date.
     applyToView(this.view, this.deps.settings.get(), this.manager.active?.eol ?? "lf");
+    const saved = this.manager.get(id)?.viewState;
+    // A fresh state (first time shown, e.g. restored from a session) takes the saved caret; a stored one already has its own.
+    if (saved) this.restoreView(saved, !stored);
+  }
+
+  /** Remember the shown tab's caret and scroll position so the session snapshot can store it. */
+  private captureView(): void {
+    const id = this.shownId;
+    if (!id || this.restoringView) return;
+    const sel = this.view.state.selection.main;
+    this.manager.setViewState(id, { anchor: sel.anchor, head: sel.head, scrollTop: this.view.scrollDOM.scrollTop });
+  }
+
+  /** Put the caret and scroll back where they were, clamped to the text in case the file changed on disk. */
+  private restoreView(saved: ViewState, applySelection: boolean): void {
+    this.restoringView = true;
+    if (applySelection) {
+      const len = this.view.state.doc.length;
+      this.view.dispatch({ selection: { anchor: Math.min(saved.anchor, len), head: Math.min(saved.head, len) } });
+    }
+    // Scroll once CodeMirror has measured the document, otherwise the height is still an estimate of 0.
+    this.view.requestMeasure({
+      read: () => null,
+      write: () => {
+        this.view.scrollDOM.scrollTop = saved.scrollTop;
+        this.restoringView = false;
+        this.captureView();
+      },
+    });
   }
 
   /** Load the grammar for a tab's language (async, cached) and reconfigure the editor if it changed. */

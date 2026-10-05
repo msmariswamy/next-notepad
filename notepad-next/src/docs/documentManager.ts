@@ -1,5 +1,12 @@
 import type { Eol } from "../editor/status";
 
+/** Caret and scroll position of a tab, kept so a session restore can put the user back where they were. */
+export interface ViewState {
+  anchor: number;
+  head: number;
+  scrollTop: number;
+}
+
 export interface Doc {
   id: string;
   title: string;
@@ -19,6 +26,8 @@ export interface Doc {
   metaDirty: boolean;
   /** True when a restored tab's file no longer exists on disk. */
   missing: boolean;
+  /** Last known caret and scroll position; absent for tabs never shown or restored from an older session. */
+  viewState?: ViewState | null;
 }
 
 export interface RestoredDoc {
@@ -34,6 +43,7 @@ export interface RestoredDoc {
   languageManual: boolean;
   metaDirty: boolean;
   missing: boolean;
+  viewState?: ViewState | null;
 }
 
 export interface LoadedFile {
@@ -69,6 +79,7 @@ export class DocumentManager {
 
   private nextId = 1;
   private listeners = new Set<() => void>();
+  private viewListeners = new Set<() => void>();
   private recentlyClosedLimit: number;
 
   constructor(opts: { recentlyClosedLimit?: number } = {}) {
@@ -78,6 +89,21 @@ export class DocumentManager {
   subscribe(fn: () => void): () => void {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
+  }
+
+  /** Notified when a tab's caret or scroll position changes; separate from `subscribe` so scrolling never re-renders the tab bar. */
+  subscribeView(fn: () => void): () => void {
+    this.viewListeners.add(fn);
+    return () => this.viewListeners.delete(fn);
+  }
+
+  setViewState(id: string, viewState: ViewState): void {
+    const doc = this.get(id);
+    if (!doc) return;
+    const old = doc.viewState;
+    if (old && old.anchor === viewState.anchor && old.head === viewState.head && old.scrollTop === viewState.scrollTop) return;
+    doc.viewState = viewState;
+    for (const fn of this.viewListeners) fn();
   }
 
   private emit(): void {

@@ -16,6 +16,15 @@ use std::path::{Path, PathBuf};
 
 /// A tab as exchanged with the frontend. `text` is `None` for clean saved tabs,
 /// which are reloaded from their path instead of being copied into the session.
+/// Caret and scroll position of a tab (spec: session-restore). Optional in the file so older sessions still load.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ViewState {
+    pub anchor: u64,
+    pub head: u64,
+    pub scroll_top: f64,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TabSnapshot {
@@ -31,6 +40,8 @@ pub struct TabSnapshot {
     pub language_manual: bool,
     pub dirty: bool,
     pub text: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub view_state: Option<ViewState>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -64,6 +75,8 @@ struct TabMeta {
     #[serde(default)]
     language_manual: bool,
     dirty: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    view_state: Option<ViewState>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -106,6 +119,7 @@ fn split(tab: &TabSnapshot, key: String) -> (StoredTab, Option<(String, &str)>) 
         language: tab.language.clone(),
         language_manual: tab.language_manual,
         dirty: tab.dirty,
+        view_state: tab.view_state,
     };
     match &tab.text {
         Some(text) => (StoredTab { meta, content_key: Some(key.clone()) }, Some((key, text.as_str()))),
@@ -182,6 +196,7 @@ fn hydrate(dir: &Path, stored: StoredTab) -> Option<TabSnapshot> {
         language_manual: m.language_manual,
         dirty: m.dirty,
         text,
+        view_state: m.view_state,
     })
 }
 
@@ -236,6 +251,7 @@ mod tests {
             language_manual: false,
             dirty: text.is_some(),
             text: text.map(str::to_string),
+            view_state: None,
         }
     }
 
@@ -313,6 +329,35 @@ mod tests {
         assert!(dir.path().join("session.json").exists());
         assert_eq!(loaded.tabs.len(), 1);
         assert_eq!((loaded.tabs[0].language.as_str(), loaded.tabs[0].language_manual), ("JSON", false));
+    }
+
+    #[test]
+    fn the_view_state_roundtrips() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut t = tab("doc-1", Some("x"));
+        t.view_state = Some(ViewState { anchor: 3, head: 7, scroll_top: 120.5 });
+        save(dir.path(), &snap(vec![t.clone()])).unwrap();
+        assert_eq!(load(dir.path()).tabs[0], t);
+    }
+
+    #[test]
+    fn sessions_written_before_view_state_existed_load_without_it() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join("session.json"),
+            r#"{"version":1,"tabs":[{"id":"doc-1","title":"new 1","path":null,"encoding":"UTF-8","bom":false,"eol":"lf","language":"JSON","dirty":false,"contentKey":null}],"activeId":null}"#,
+        )
+        .unwrap();
+        let loaded = load(dir.path());
+        assert!(dir.path().join("session.json").exists(), "an older session is not quarantined");
+        assert_eq!(loaded.tabs[0].view_state, None);
+    }
+
+    #[test]
+    fn a_tab_without_view_state_writes_no_view_state_key() {
+        let dir = tempfile::tempdir().unwrap();
+        save(dir.path(), &snap(vec![tab("doc-1", Some("x"))])).unwrap();
+        assert!(!fs::read_to_string(dir.path().join("session.json")).unwrap().contains("viewState"));
     }
 
     #[test]

@@ -46,6 +46,9 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 export class FindController {
   state: FindState = { ...DEFAULT_FIND_STATE, opts: { ...DEFAULT_PATTERN_OPTIONS } };
 
+  /** Told about each Find Next, Replace and Replace All with the settings it used (the macro recorder listens here). */
+  onAction?: (action: "findNext" | "replace" | "replaceAll", state: FindState) => void;
+
   constructor(private app: App) {}
 
   private query(): Query {
@@ -64,6 +67,11 @@ export class FindController {
 
   /** Select the next match; returns false when there is none. */
   findNext(direction?: { backward: boolean }): boolean {
+    this.onAction?.("findNext", { ...this.state, backward: direction?.backward ?? this.state.backward });
+    return this.findNextCore(direction);
+  }
+
+  private findNextCore(direction?: { backward: boolean }): boolean {
     const hit = findNext(this.activeText(), this.query(), this.app.getSelection(), {
       backward: direction?.backward ?? this.state.backward,
       wrap: this.state.wrap,
@@ -107,16 +115,19 @@ export class FindController {
 
   /** Replace the selected match if there is one, then move to the next match. */
   replace(): boolean {
+    this.onAction?.("replace", this.state);
     const plan = planReplaceCurrent(this.activeText(), this.query(), this.app.getSelection());
     if (plan) {
       this.app.applyChangesToDoc(this.app.manager.activeId!, [plan.change]);
       this.app.setSelection({ from: plan.nextFrom, to: plan.nextFrom });
     }
-    return this.findNext();
+    // The follow-up search is part of Replace, not a separate action to record.
+    return this.findNextCore();
   }
 
   /** Replace every match in the current tab (one undo step); returns how many were replaced. */
   replaceAll(): number {
+    this.onAction?.("replaceAll", this.state);
     const changes = planReplaceAll(this.activeText(), this.query(), this.range());
     this.app.applyChangesToDoc(this.app.manager.activeId!, changes);
     return changes.length;

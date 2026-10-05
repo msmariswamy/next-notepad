@@ -4,12 +4,15 @@ import { EditOps } from "../edit/editOps";
 import type { CaseMode, SortKind } from "../edit/transforms";
 import type { App } from "./app";
 import { LANGUAGES } from "../lang/languages";
+import { runBase64Command } from "../edit/base64Commands";
 import { runJsonCommand } from "../json/jsonCommands";
 import { runFormatDocument } from "../format/formatCommand";
 import { openAboutDialog } from "./about";
 import type { FindController } from "../search/findController";
 import type { FindTab } from "../search/findDialog";
 import type { SettingsStore } from "../settings/store";
+import type { SplitView } from "../split/splitView";
+import type { MacroController } from "../macro/controller";
 import type { Theme } from "../settings/model";
 
 export interface Command {
@@ -28,6 +31,10 @@ export interface CommandContext {
   settings: SettingsStore;
   openFind(tab: FindTab): void;
   openSettings(): void;
+  /** Split view controller; absent in contexts that have no second pane (some tests). */
+  split?: SplitView;
+  /** Macro controller; absent in contexts without macro support (some tests). */
+  macros?: MacroController;
 }
 
 const ENCODINGS: { id: string; label: string; encoding: string; bom: boolean }[] = [
@@ -82,7 +89,7 @@ export function createCommands(ctx: CommandContext): Command[] {
   const selectedText = () => app.view.state.sliceDoc(app.getSelection().from, app.getSelection().to);
   const doc = () => app.manager.active;
   const activeId = () => app.manager.activeId;
-  const toggle = (key: "wordWrap" | "showWhitespace" | "showAllCharacters") => () => void settings.update({ [key]: !settings.get()[key] });
+  const toggle = (key: "wordWrap" | "showWhitespace" | "showAllCharacters" | "showFunctionList" | "showDocumentMap") => () => void settings.update({ [key]: !settings.get()[key] });
 
   return [
     // File
@@ -170,10 +177,21 @@ export function createCommands(ctx: CommandContext): Command[] {
     { id: "indent.less", label: "Outdent", accelerator: "Mod+[", run: () => void edit.outdent() },
     { id: "comment.line", label: "Toggle Single Line Comment", accelerator: "Mod+/", run: () => void edit.toggleLineComment() },
     { id: "comment.block", label: "Toggle Block Comment", run: () => void edit.toggleBlockComment() },
+    // Edit: Base64
+    { id: "base64.encode", label: "Base64 Encode", run: () => void runBase64Command(app, "encode") },
+    { id: "base64.decode", label: "Base64 Decode", run: () => void runBase64Command(app, "decode") },
+    { id: "base64.encodeUrl", label: "Base64 Encode (URL-safe)", run: () => void runBase64Command(app, "encodeUrl") },
+    { id: "base64.decodeUrl", label: "Base64 Decode (URL-safe)", run: () => void runBase64Command(app, "decodeUrl") },
     // View
     { id: "view.wordWrap", label: "Word Wrap", run: toggle("wordWrap"), checked: () => settings.get().wordWrap },
     { id: "view.showWhitespace", label: "Show Whitespace", run: toggle("showWhitespace"), checked: () => settings.get().showWhitespace },
     { id: "view.showAllCharacters", label: "Show All Characters", run: toggle("showAllCharacters"), checked: () => settings.get().showAllCharacters },
+    { id: "view.functionList", label: "Function List", run: toggle("showFunctionList"), checked: () => settings.get().showFunctionList },
+    { id: "view.documentMap", label: "Document Map", run: toggle("showDocumentMap"), checked: () => settings.get().showDocumentMap },
+    { id: "view.splitVertical", label: "Split Vertically", run: () => ctx.split?.open("vertical") },
+    { id: "view.splitHorizontal", label: "Split Horizontally", run: () => ctx.split?.open("horizontal") },
+    { id: "view.closeSplit", label: "Close Split", run: () => ctx.split?.close() },
+    { id: "view.moveToOtherPane", label: "Move to Other Pane", run: () => ctx.split?.moveToOtherPane() },
     ...(["system", "light", "dark"] as Theme[]).map((t) => ({
       id: `view.theme.${t}`,
       label: `Theme: ${t[0].toUpperCase()}${t.slice(1)}`,
@@ -208,6 +226,14 @@ export function createCommands(ctx: CommandContext): Command[] {
     { id: "json.escape", label: "Escape as JSON String", run: () => void runJsonCommand(app, "escape") },
     { id: "json.unescape", label: "Unescape JSON String", run: () => void runJsonCommand(app, "unescape") },
     { id: "json.validate", label: "Validate", accelerator: "Mod+Alt+V", run: () => void runJsonCommand(app, "validate") },
+    // Macro
+    { id: "macro.startRecording", label: "Start Recording", run: () => ctx.macros?.startRecording() },
+    { id: "macro.stopRecording", label: "Stop Recording", run: () => ctx.macros?.stopRecording() },
+    { id: "macro.playback", label: "Playback", run: () => ctx.macros?.playback() },
+    { id: "macro.runMultiple", label: "Run a Macro Multiple Times…", run: () => ctx.macros?.runMultiple() },
+    { id: "macro.saveAs", label: "Save Current Recorded Macro…", run: () => ctx.macros?.saveAs() },
+    { id: "macro.manage", label: "Manage Saved Macros…", run: () => ctx.macros?.manage() },
+    { id: "macro.none", label: "(no saved macros)", run: () => {} },
     // Help
     { id: "help.about", label: "About next-notepad", run: () => void openAboutDialog() },
     // Settings
@@ -224,7 +250,9 @@ export interface MenuModel {
 
 const sorts = (dir: "asc" | "desc") => SORTS.map((x) => `sort.${x.kind}.${dir}`);
 
-export const MENU: MenuModel[] = [
+/** The menu bar layout. Saved macros are dynamic, so the Macro menu lists them from `savedMacroIds`. */
+export function buildMenu(savedMacroIds: string[] = []): MenuModel[] {
+  return [
   { label: "File", items: ["file.new", "file.open", "file.openFolder", "-", "file.save", "file.saveAs", "-", "file.closeTab"] },
   {
     label: "Edit",
@@ -267,6 +295,7 @@ export const MENU: MenuModel[] = [
       },
       { label: "Indent", items: ["indent.more", "indent.less"] },
       { label: "Comment/Uncomment", items: ["comment.line", "comment.block"] },
+      { label: "Base64", items: ["base64.encode", "base64.decode", "-", "base64.encodeUrl", "base64.decodeUrl"] },
       "-",
       "format.document",
     ],
@@ -287,13 +316,31 @@ export const MENU: MenuModel[] = [
       "marks.clear",
     ],
   },
-  { label: "View", items: ["view.wordWrap", "view.showWhitespace", "view.showAllCharacters", "-", "view.theme.system", "view.theme.light", "view.theme.dark"] },
+  { label: "View", items: ["view.wordWrap", "view.showWhitespace", "view.showAllCharacters", "-", "view.functionList", "view.documentMap", "-", "view.splitVertical", "view.splitHorizontal", "view.closeSplit", "view.moveToOtherPane", "-", "view.theme.system", "view.theme.light", "view.theme.dark"] },
   { label: "Encoding", items: ["eol.lf", "eol.crlf", "eol.cr", "-", ...ENCODINGS.map((e) => e.id)] },
   { label: "Language", items: LANGUAGES.map((l) => `lang.${l.name}`) },
   { label: "JSON", items: ["json.pretty", "json.pretty4", "json.prettyTabs", "json.minify", "json.sortKeys", "-", "json.escape", "json.unescape", "-", "json.validate"] },
+  {
+    label: "Macro",
+    items: [
+      "macro.startRecording",
+      "macro.stopRecording",
+      "-",
+      "macro.playback",
+      "macro.runMultiple",
+      "-",
+      "macro.saveAs",
+      "macro.manage",
+      "-",
+      ...(savedMacroIds.length > 0 ? savedMacroIds : ["macro.none"]),
+    ],
+  },
   { label: "Settings", items: ["settings.open"] },
   { label: "Help", items: ["help.about"] },
-];
+  ];
+}
+
+export const MENU: MenuModel[] = buildMenu();
 
 /** Every command id referenced by a menu, flattened (used by tests). */
 export function menuIds(items: MenuItem[] = MENU.flatMap((m) => m.items)): string[] {

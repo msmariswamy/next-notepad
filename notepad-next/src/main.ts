@@ -13,10 +13,19 @@ import { FilesSearchController } from "./search/filesSearch";
 import { tauriFilesApi } from "./search/tauriFilesApi";
 import { confirmDialog } from "./app/dialogs";
 import { installPalette } from "./lang/palette";
-import { createCommands } from "./app/commands";
+import { buildMenu, createCommands, type Command } from "./app/commands";
+import { MacroController } from "./macro/controller";
+import { createMacroPrompts } from "./macro/dialogs";
+import { MacroPlayer } from "./macro/player";
+import { MacroRecorder } from "./macro/recorder";
+import { MacroStore } from "./macro/store";
 import { dispatchShortcut, renderMenuBar } from "./app/menuBar";
 import { createToaster } from "./app/toast";
 import { restoreSession } from "./session/snapshot";
+import { applyDockVisibility, getDock } from "./layout/workspace";
+import { FunctionListPanel } from "./functionlist/panel";
+import { DocumentMapPanel } from "./documentmap/panel";
+import { SplitView } from "./split/splitView";
 
 installPalette();
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -56,6 +65,20 @@ if (inTauri) {
   // No native close event in a browser; flush when the page goes away so a reload acts like quit + relaunch.
   window.addEventListener("pagehide", () => void session.flush());
 }
+
+const dock = getDock();
+applyDockVisibility(dock, settings.get());
+const functionList = new FunctionListPanel(dock.functions, app, () => settings.get());
+const documentMap = new DocumentMapPanel(dock.map, app, () => settings.get());
+settings.subscribe((s) => {
+  applyDockVisibility(dock, s);
+  functionList.schedule();
+  documentMap.schedule();
+});
+functionList.schedule();
+documentMap.schedule();
+
+const split = new SplitView({ app, panes: document.getElementById("panes")!, secondParent: document.getElementById("editor2")!, settings });
 
 const finder = new FindController(app);
 const filesApi = inTauri ? tauriFilesApi : (host as ReturnType<typeof createBrowserHost>).filesApi;
@@ -97,13 +120,39 @@ const openFind = (tab: FindTab) =>
     tab,
   );
 
-const commands = createCommands({
+const notify = (message: string, kind: "info" | "error") => app.notify(message, kind);
+const macroStore = new MacroStore(host.ipc);
+await macroStore.load();
+let baseCommands: Command[] = [];
+const labelOf = (id: string) => baseCommands.find((c) => c.id === id)?.label ?? id;
+const macros: MacroController = new MacroController({
+  app,
+  finder,
+  store: macroStore,
+  recorder: new MacroRecorder(app),
+  // Playback runs the unwrapped commands: nothing is being recorded, so the recording wrapper has nothing to add.
+  player: new MacroPlayer({ app, commands: () => baseCommands, finder, labelOf }),
+  prompts: createMacroPrompts(macroStore, (name) => void macros.runSaved(name), notify),
+  notify,
+  labelOf,
+});
+
+baseCommands = createCommands({
   app,
   finder,
   settings,
   openFind,
   openSettings: () => openSettingsDialog(settings),
+  split,
+  macros,
 });
-renderMenuBar(document.getElementById("menubar")!, commands);
+const commands = macros.wrapCommands(baseCommands);
+// Saved macros come and go, so the menu is rebuilt whenever the list changes.
+const renderMenu = () => {
+  const saved = macros.savedCommands();
+  renderMenuBar(document.getElementById("menubar")!, [...commands, ...saved], buildMenu(saved.map((c) => c.id)));
+};
+renderMenu();
+macroStore.subscribe(renderMenu);
 // Capture phase, so app shortcuts win over CodeMirror's default keymap for the same key.
 window.addEventListener("keydown", (e) => void dispatchShortcut(e, commands), true);

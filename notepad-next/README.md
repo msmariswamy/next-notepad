@@ -59,6 +59,20 @@ cd src-tauri && cargo test   # Rust backend
   inverse for bookmarked lines.
 - **View**: Word Wrap, Show Whitespace, **Show All Characters** (spaces, tabs and LF / CRLF / CR markers; the text itself is
   never changed) and theme. Settings has tab width and an option to insert a tab character instead of spaces.
+- **Macro menu**: *Start / Stop Recording* captures typed, pasted and deleted text, movement keys (arrows, Home/End, ...),
+  menu commands and Find / Replace actions with their options. *Playback* replays the last recorded macro at the caret,
+  *Run a Macro Multiple Times* repeats it a number of times or until the end of the file, and a whole playback (however
+  many repeats) is **one undo step**. *Save Current Recorded Macro* names it; saved macros are listed in the menu and kept in
+  `macros.json` in the app-data directory (see *Manage Saved Macros* to rename or delete). Commands that open dialogs or tabs
+  run but are not recorded, and a macro stops with a message if a step fails (for example a Find with no match).
+- **View > Split Vertically / Horizontally** shows the tab in two panes that share one document and one undo history, each
+  with its own caret and scroll; *Close Split* and *Move to Other Pane* are in the same menu. Switching tabs closes the split.
+- **View > Function List** (functions, classes, methods and headings of 16 languages, filterable, click to jump) and
+  **View > Document Map** (a minimap with a draggable viewport; it switches off above 50,000 lines or the large-file
+  threshold) are docked on the right, and remember whether they were shown.
+- **Edit > Base64**: Encode / Decode (standard and URL-safe) the selection, every selection range, or the whole document;
+  invalid input is never modified and the reason is shown.
+- The caret and scroll position of every tab are stored with the session and restored on launch.
 
 ### JSON formatting notes
 

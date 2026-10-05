@@ -55,3 +55,24 @@ test("text typed before a crash survives via the debounced snapshot", async ({ p
   await page.reload();
   await expect(page.locator(".cm-content")).toHaveText("typed before the crash");
 });
+
+test("the caret and scroll position come back after relaunch", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  await page.locator(".cm-content").click();
+  await page.keyboard.insertText(Array.from({ length: 300 }, (_, i) => `line ${i + 1}`).join("\n"));
+  // Put the caret on line 120 and scroll that region into view.
+  await page.keyboard.press("Meta+ArrowUp");
+  for (let i = 0; i < 119; i++) await page.keyboard.press("ArrowDown");
+  await page.locator(".cm-scroller").evaluate((el) => (el.scrollTop = 1500));
+  await expect(page.getByTestId("statusbar")).toContainText("Ln: 120");
+
+  await page.reload();
+
+  await expect(page.getByTestId("statusbar")).toContainText("Ln: 120");
+  await expect
+    .poll(() => page.locator(".cm-scroller").evaluate((el) => el.scrollTop))
+    .toBeGreaterThan(1000);
+});

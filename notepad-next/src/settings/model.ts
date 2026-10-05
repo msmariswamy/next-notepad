@@ -14,6 +14,10 @@ export interface Settings {
   /** Tab key inserts a tab character instead of spaces. */
   useTabs: boolean;
   largeFileThresholdBytes: number;
+  /** Right-docked Function List panel (default hidden). */
+  showFunctionList: boolean;
+  /** Right-docked Document Map panel (default hidden). */
+  showDocumentMap: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -27,6 +31,8 @@ export const DEFAULT_SETTINGS: Settings = {
   tabWidth: 4,
   useTabs: false,
   largeFileThresholdBytes: 50 * 1024 * 1024,
+  showFunctionList: false,
+  showDocumentMap: false,
 };
 
 export const MIN_FONT_SIZE = 8;

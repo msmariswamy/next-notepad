@@ -6,6 +6,7 @@ import { buildSnapshot } from "./snapshot";
 export class SessionClient {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private unsubscribe: (() => void) | null = null;
+  private unsubscribeView: (() => void) | null = null;
 
   constructor(
     private mgr: DocumentManager,
@@ -13,13 +14,16 @@ export class SessionClient {
     private debounceMs = 2000,
   ) {}
 
-  /** Start snapshotting after every change to the tab set or any tab's text. */
+  /** Start snapshotting after every change to the tab set, any tab's text, or a tab's caret or scroll position. */
   start(): void {
     this.unsubscribe = this.mgr.subscribe(() => this.schedule());
+    // schedule() only restarts the existing debounce, so a stream of scroll events still writes at most once per interval after it stops.
+    this.unsubscribeView = this.mgr.subscribeView(() => this.schedule());
   }
 
   stop(): void {
     this.unsubscribe?.();
+    this.unsubscribeView?.();
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
   }

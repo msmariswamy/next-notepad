@@ -1,4 +1,4 @@
-import type { DocumentManager, Doc, ClosedDoc, LoadedFile } from "../docs/documentManager";
+import type { DocumentManager, Doc, ClosedDoc, LoadedFile, ViewState } from "../docs/documentManager";
 import type { Eol } from "../editor/status";
 import type { Ipc } from "../ipc";
 
@@ -15,6 +15,8 @@ export interface TabSnapshot {
   dirty: boolean;
   /** Present for untitled and dirty tabs; null for clean saved tabs (reloaded from disk). */
   text: string | null;
+  /** Caret and scroll position; absent in sessions written before this field existed. */
+  viewState?: ViewState | null;
 }
 
 export interface SessionSnapshot {
@@ -35,6 +37,7 @@ function tabSnapshot(d: Doc): TabSnapshot {
     languageManual: d.languageManual,
     dirty: d.dirty,
     text: d.dirty || d.path === null ? d.text : null,
+    viewState: d.viewState ?? null,
   };
 }
 
@@ -69,7 +72,7 @@ async function readFromDisk(ipc: Ipc, path: string): Promise<LoadedFile | null> 
 }
 
 /**
- * Restore tabs from the stored session. Contents only: cursor, scroll and undo history are not restored.
+ * Restore tabs from the stored session: text, caret and scroll position (undo history is not restored).
  * Returns true when at least one tab was restored.
  */
 export async function restoreSession(mgr: DocumentManager, ipc: Ipc): Promise<boolean> {
@@ -101,6 +104,7 @@ export async function restoreSession(mgr: DocumentManager, ipc: Ipc): Promise<bo
       // A tab that was dirty only because of an EOL/encoding change has no text difference to show.
       metaDirty: tab.dirty && text === savedText,
       missing: tab.path !== null && disk === null,
+      viewState: tab.viewState ?? null,
     });
     restored++;
   }

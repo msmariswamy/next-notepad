@@ -26,6 +26,13 @@ export function createBrowserHost(): { ipc: Ipc; platform: Platform; filesApi: F
       const raw = localStorage.getItem("notepad-next.session");
       return raw ? JSON.parse(raw) : { tabs: [], activeId: null, recentlyClosed: [] };
     },
+    load_macros: () => {
+      const raw = localStorage.getItem("notepad-next.macros");
+      return raw ? JSON.parse(raw) : { version: 1, macros: [] };
+    },
+    save_macros: (args) => {
+      localStorage.setItem("notepad-next.macros", JSON.stringify(args?.file));
+    },
     file_size: (args) => new Blob([files.get(String(args?.path)) ?? ""]).size,
     get_settings: () => settings,
     update_settings: (args) => {

@@ -53,6 +53,59 @@ describe("buildSnapshot", () => {
   });
 });
 
+describe("view state in the snapshot", () => {
+  it("stores each tab's caret and scroll position", () => {
+    const m = new DocumentManager();
+    const d = m.newDoc();
+    m.setViewState(d.id, { anchor: 3, head: 7, scrollTop: 120 });
+    expect(buildSnapshot(m).tabs[0].viewState).toEqual({ anchor: 3, head: 7, scrollTop: 120 });
+  });
+
+  it("stores null for a tab that was never shown", () => {
+    const m = new DocumentManager();
+    m.newDoc();
+    expect(buildSnapshot(m).tabs[0].viewState).toBeNull();
+  });
+
+  it("restores the saved view state onto the tab", async () => {
+    const ipc = createMockIpc({ load_session: () => snapshotOf([tab({ viewState: { anchor: 2, head: 4, scrollTop: 50 } })]) });
+    const m = new DocumentManager();
+    await restoreSession(m, ipc);
+    expect(m.docs[0].viewState).toEqual({ anchor: 2, head: 4, scrollTop: 50 });
+  });
+
+  it("an older session without view state still restores, with no saved position", async () => {
+    const ipc = createMockIpc({ load_session: () => snapshotOf([tab()]) });
+    const m = new DocumentManager();
+    expect(await restoreSession(m, ipc)).toBe(true);
+    expect(m.docs[0].viewState ?? null).toBeNull();
+  });
+});
+
+describe("setViewState", () => {
+  it("notifies view listeners but not the tab-bar listeners", () => {
+    const m = new DocumentManager();
+    const d = m.newDoc();
+    const main = vi.fn();
+    const view = vi.fn();
+    m.subscribe(main);
+    m.subscribeView(view);
+    m.setViewState(d.id, { anchor: 1, head: 1, scrollTop: 0 });
+    expect(main).not.toHaveBeenCalled();
+    expect(view).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores an unchanged position", () => {
+    const m = new DocumentManager();
+    const d = m.newDoc();
+    const view = vi.fn();
+    m.subscribeView(view);
+    m.setViewState(d.id, { anchor: 1, head: 1, scrollTop: 0 });
+    m.setViewState(d.id, { anchor: 1, head: 1, scrollTop: 0 });
+    expect(view).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("restoreSession", () => {
   it("restores untitled tabs with their text, marked modified", async () => {
     const ipc = createMockIpc({ load_session: () => snapshotOf([tab({ id: "doc-1", text: "one" }), tab({ id: "doc-2", title: "new 2", text: "two" })]) });
@@ -170,6 +223,20 @@ describe("SessionClient", () => {
     await vi.advanceTimersByTimeAsync(2000);
     expect(ipc.calls.length).toBe(1);
     expect((ipc.calls[0].args as { snapshot: SessionSnapshot }).snapshot.tabs[0].text).toBe("ab");
+  });
+
+  it("a scroll or caret change schedules a snapshot but stays debounced", async () => {
+    const ipc = createMockIpc({ save_session: () => undefined });
+    const m = new DocumentManager();
+    const d = m.newDoc();
+    const client = new SessionClient(m, ipc, 2000);
+    client.start();
+    m.setViewState(d.id, { anchor: 0, head: 0, scrollTop: 10 });
+    m.setViewState(d.id, { anchor: 0, head: 0, scrollTop: 20 });
+    expect(ipc.calls.length).toBe(0);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(ipc.calls.length).toBe(1);
+    expect((ipc.calls[0].args as { snapshot: SessionSnapshot }).snapshot.tabs[0].viewState?.scrollTop).toBe(20);
   });
 
   it("flush saves immediately and cancels the pending debounce", async () => {

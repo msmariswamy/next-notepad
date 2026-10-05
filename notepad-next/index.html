@@ -11,7 +11,16 @@
     <div id="app">
       <nav id="menubar" data-testid="menubar"></nav>
       <div id="tabs" data-testid="tabs"></div>
-      <div id="editor" data-testid="editor"></div>
+      <div id="workspace">
+        <div id="panes">
+          <div id="editor" data-testid="editor"></div>
+          <div id="editor2" data-testid="editor2" hidden></div>
+        </div>
+        <aside id="dock" data-testid="dock" hidden>
+          <section id="panel-functions" data-testid="panel-functions" hidden></section>
+          <section id="panel-map" data-testid="panel-map" hidden></section>
+        </aside>
+      </div>
       <section id="results" data-testid="results" hidden></section>
       <div id="toast" data-testid="toast" hidden></div>
       <footer id="statusbar" data-testid="statusbar"></footer>

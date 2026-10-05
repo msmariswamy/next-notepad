@@ -23,6 +23,12 @@ Close the app and your unsaved tabs come back exactly as you left them.
   detection for untitled text.
 - **Edit tools**: convert case, line operations (duplicate, remove duplicates, join, split, move, reverse, 14 sort
   orders), trim and tab/space conversion, indent and comment toggles, bookmarked-line operations.
+- **Macros**: record typing, movement keys, menu commands and Find/Replace; play back once, several times or until the
+  end of the file (one undo step), and save named macros that survive restarts.
+- **Split view, Function List and Document Map**: view one document in two panes (vertical or horizontal, live-synced),
+  jump around with a filterable outline of functions, classes and headings, and scroll with a minimap.
+- **Base64 encode and decode** (standard and URL-safe) for the selection or the whole document, and your caret and
+  scroll position come back with your tabs.
 - **Editing basics**: tabs, multiple carets, column selection, folding, syntax highlighting for 16 languages, light and
   dark themes, word wrap, show all characters (spaces, tabs, line endings), encoding and line-ending conversion.
 

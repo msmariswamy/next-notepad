@@ -1,8 +1,8 @@
 import { formatAccelerator, isMac, matchesAccelerator } from "./accelerators";
-import { MENU, type Command, type MenuItem } from "./commands";
+import { MENU, type Command, type MenuItem, type MenuModel } from "./commands";
 
 /** In-page menu bar: click a title to open it, hover to switch, Escape or an outside click closes. */
-export function renderMenuBar(nav: HTMLElement, commands: Command[]): { close(): void } {
+export function renderMenuBar(nav: HTMLElement, commands: Command[], menus: MenuModel[] = MENU): { close(): void } {
   const byId = new Map(commands.map((c) => [c.id, c]));
   nav.replaceChildren();
   nav.setAttribute("role", "menubar");
@@ -93,7 +93,7 @@ export function renderMenuBar(nav: HTMLElement, commands: Command[]): { close():
     return holder;
   };
 
-  for (const menu of MENU) {
+  for (const menu of menus) {
     const wrapper = document.createElement("div");
     wrapper.className = "menu";
     const title = document.createElement("button");

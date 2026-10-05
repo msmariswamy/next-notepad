@@ -491,3 +491,73 @@ describe("content-based language detection", () => {
     expect(app.detectLanguageNow()).toBeNull();
   });
 });
+
+describe("caret and scroll position (spec: session-restore)", () => {
+  const restoredDoc = (text: string, viewState: { anchor: number; head: number; scrollTop: number } | null) => {
+    const manager = new DocumentManager();
+    manager.restoreDoc({
+      id: "doc-1",
+      title: "new 1",
+      path: null,
+      text,
+      savedText: "",
+      eol: "lf",
+      encoding: "UTF-8",
+      bom: false,
+      language: "Normal text",
+      languageManual: false,
+      metaDirty: false,
+      missing: false,
+      viewState,
+    });
+    document.body.innerHTML = '<div id="tabs"></div><div id="editor"></div><div id="status"></div>';
+    const restored = new App({
+      editorParent: document.getElementById("editor")!,
+      tabsEl: document.getElementById("tabs")!,
+      statusEl: document.getElementById("status")!,
+      manager,
+      platform,
+      ipc,
+      settings: { get: () => settings, subscribe: () => () => {} },
+    });
+    restored.start();
+    return { restored, manager };
+  };
+
+  it("puts the caret back on a restored tab", () => {
+    const { restored } = restoredDoc("line one\nline two\nline three", { anchor: 9, head: 13, scrollTop: 0 });
+    expect(restored.getSelection()).toEqual({ from: 9, to: 13 });
+  });
+
+  it("clamps a saved position that is past the end of the text", () => {
+    const { restored } = restoredDoc("short", { anchor: 500, head: 900, scrollTop: 0 });
+    expect(restored.getSelection()).toEqual({ from: 5, to: 5 });
+  });
+
+  it("a tab restored without view state starts with the caret at the beginning", () => {
+    const { restored } = restoredDoc("hello", null);
+    expect(restored.getSelection()).toEqual({ from: 0, to: 0 });
+  });
+
+  it("keeps the restored scroll position in the tab until the user moves", async () => {
+    const { manager } = restoredDoc("hello", { anchor: 0, head: 0, scrollTop: 77 });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(manager.docs[0].viewState?.scrollTop).toBe(77);
+  });
+
+  it("records the caret in the tab as the user moves it", () => {
+    type("hello world");
+    app.setSelection({ from: 2, to: 5 });
+    expect(app.manager.active!.viewState).toMatchObject({ anchor: 2, head: 5 });
+  });
+
+  it("restores the caret of a tab when switching back to it", () => {
+    type("first tab text");
+    app.setSelection({ from: 3, to: 3 });
+    const firstId = app.manager.activeId!;
+    app.newTab();
+    type("second");
+    app.activateTab(firstId);
+    expect(app.getSelection()).toEqual({ from: 3, to: 3 });
+  });
+});

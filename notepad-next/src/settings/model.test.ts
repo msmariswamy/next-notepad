@@ -6,6 +6,18 @@ describe("settings model", () => {
     expect(DEFAULT_SETTINGS.silentClose).toBe(false);
   });
 
+  it("hides both side panels by default", () => {
+    expect(DEFAULT_SETTINGS).toMatchObject({ showFunctionList: false, showDocumentMap: false });
+  });
+
+  it("an older settings object without the panel keys falls back to hidden once merged over the defaults", () => {
+    const { showFunctionList, showDocumentMap, ...older } = { ...DEFAULT_SETTINGS, wordWrap: true };
+    void showFunctionList;
+    void showDocumentMap;
+    const merged = sanitizeSettings({ ...DEFAULT_SETTINGS, ...older });
+    expect(merged).toMatchObject({ wordWrap: true, showFunctionList: false, showDocumentMap: false });
+  });
+
   it("clamps font size into a usable range", () => {
     expect(sanitizeSettings({ ...DEFAULT_SETTINGS, fontSize: 2 }).fontSize).toBe(8);
     expect(sanitizeSettings({ ...DEFAULT_SETTINGS, fontSize: 500 }).fontSize).toBe(72);

@@ -1,5 +1,6 @@
 mod files;
 mod find_files;
+mod macros;
 mod regex_compat;
 mod session;
 mod settings;
@@ -20,6 +21,7 @@ pub fn run() {
             app.manage(settings::SettingsState::load(dir.join("settings.json")));
             app.manage(find_files::FindJobs::default());
             app.manage(session::SessionState { dir: dir.join("session") });
+            app.manage(macros::MacroState { path: dir.join("macros.json") });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -31,6 +33,8 @@ pub fn run() {
             settings::update_settings,
             session::save_session,
             session::load_session,
+            macros::load_macros,
+            macros::save_macros,
             find_files::find_in_files,
             find_files::replace_in_files,
             find_files::cancel_find
