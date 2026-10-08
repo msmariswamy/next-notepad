@@ -1,6 +1,6 @@
 [package]
 name = "notepad-next"
-version = "0.2.1"
+version = "0.3.0"
 description = "next-notepad: a fast, cross-platform text and code editor"
 authors = ["Mariswamy Pillai"]
 edition = "2021"
