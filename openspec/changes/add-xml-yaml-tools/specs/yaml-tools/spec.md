@@ -139,12 +139,22 @@ The system SHALL underline the first syntax error in a tab whose language is YAM
 - **THEN** no YAML underline is shown
 
 ### Requirement: Language switch
-After a successful YAML command on a tab whose language is Normal text, the system SHALL set the tab's language to YAML unless the user had chosen a language manually.
+After a successful YAML command on a tab whose language is Normal text, or on an untitled tab whose language was only detected from its content, the system SHALL set the tab's language to YAML unless the user had chosen a language manually. A tab that belongs to a file SHALL keep the language its file name gave it.
 
 #### Scenario: Plain text becomes YAML
 - **GIVEN** a Normal text tab containing `a: 1`
 - **WHEN** the user runs YAML > Format (2 spaces)
 - **THEN** the tab's language is YAML
+
+#### Scenario: A guessed language is replaced
+- **GIVEN** an untitled tab whose language was detected automatically as HTML
+- **WHEN** the user runs a YAML command that succeeds
+- **THEN** the tab's language is YAML
+
+#### Scenario: A file keeps its language
+- **GIVEN** a tab for `page.html` whose language is HTML
+- **WHEN** the user runs a YAML command that succeeds
+- **THEN** the tab's language stays HTML
 
 #### Scenario: Manual choice wins
 - **GIVEN** a tab whose language the user set to Python

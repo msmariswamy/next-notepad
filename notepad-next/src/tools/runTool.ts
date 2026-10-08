@@ -87,8 +87,10 @@ export async function runTool(app: App, spec: ToolSpec): Promise<ToolResult> {
   if (!result.ok) return fail(app, s, result, spec.errorPrefix);
   if (!spec.inspectOnly && result.text !== s.text) app.applyChangesToDoc(s.id, [{ from: s.from, to: s.to, insert: result.text }]);
   const doc = app.manager.get(s.id);
-  // A manual language choice always wins, as it does for the JSON commands.
-  if (doc && doc.language === PLAIN_TEXT && !doc.languageManual) app.manager.setLanguage(s.id, spec.language);
+  // A manual language choice always wins. Beyond Normal text, an untitled tab's language is only a guess from its content
+  // (`<a><b/></a>` looks like HTML), and running an XML or YAML command says what it is. A tab for a file keeps the
+  // language its extension gave it.
+  if (doc && !doc.languageManual && (doc.language === PLAIN_TEXT || doc.path === null)) app.manager.setLanguage(s.id, spec.language);
   app.notify(message(result.message ?? spec.success, result.ok ? result.warnings : undefined), "info");
   return result;
 }

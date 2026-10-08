@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
 const menu = (page: Page, title: string) => page.getByTestId("menubar").locator(".menu-title", { hasText: new RegExp(`^${title}$`) });
@@ -202,7 +203,9 @@ test("Help > About credits the author and shows the version", async ({ page }) =
   const about = page.getByTestId("about-dialog");
   await expect(about).toBeVisible();
   await expect(about).toContainText("Idea and creation by Mariswamy Pillai");
-  await expect(about).toContainText("Version 0.1.0");
+  // Read the version from package.json so a release bump never breaks this test.
+  const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
+  await expect(about).toContainText(`Version ${version}`);
   await about.getByRole("button", { name: "Close" }).click();
   await expect(about).toHaveCount(0);
 });

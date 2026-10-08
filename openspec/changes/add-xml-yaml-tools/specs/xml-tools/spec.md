@@ -155,12 +155,22 @@ The system SHALL underline the first well-formedness error in a tab whose langua
 - **THEN** nothing is underlined
 
 ### Requirement: Language switch
-After a successful XML command on a tab whose language is Normal text, the system SHALL set the tab's language to XML unless the user had chosen a language manually.
+After a successful XML command on a tab whose language is Normal text, or on an untitled tab whose language was only detected from its content, the system SHALL set the tab's language to XML unless the user had chosen a language manually. A tab that belongs to a file SHALL keep the language its file name gave it.
 
 #### Scenario: Plain text becomes XML
 - **GIVEN** a Normal text tab containing `<a><b/></a>`
 - **WHEN** the user runs XML > Format (2 spaces)
 - **THEN** the tab's language is XML
+
+#### Scenario: A guessed language is replaced
+- **GIVEN** an untitled tab whose language was detected automatically as HTML
+- **WHEN** the user runs a XML command that succeeds
+- **THEN** the tab's language is XML
+
+#### Scenario: A file keeps its language
+- **GIVEN** a tab for `page.html` whose language is HTML
+- **WHEN** the user runs a XML command that succeeds
+- **THEN** the tab's language stays HTML
 
 #### Scenario: Manual choice wins
 - **GIVEN** a tab whose language the user set to Python

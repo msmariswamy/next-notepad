@@ -134,6 +134,20 @@ describe("runTool", () => {
     expect(app.manager.active!.language).toBe("Python");
   });
 
+  it("switches an untitled tab whose language was only guessed from its content", async () => {
+    setText("<a><b/></a>");
+    app.manager.setLanguage(app.manager.activeId!, "HTML");
+    await runTool(app, { language: "XML", success: "Done", run: upper });
+    expect(app.manager.active!.language).toBe("XML");
+  });
+
+  it("keeps the language of a tab that belongs to a file", async () => {
+    app.manager.openFile("/work/page.html", { text: "<a/>", encoding: "UTF-8", bom: false, eol: "lf" });
+    app.manager.setLanguage(app.manager.activeId!, "HTML");
+    await runTool(app, { language: "XML", success: "Done", run: upper });
+    expect(app.manager.active!.language).toBe("HTML");
+  });
+
   it("does not switch the language when the tool failed", async () => {
     setText("abc");
     await runTool(app, { language: "XML", success: "Done", run: () => ({ ok: false, message: "bad" }) });
