@@ -30,6 +30,11 @@ dialog.confirm { border: 1px solid #8886; border-radius: 8px; padding: 16px 20px
 :root[data-theme="dark"] .cm-gutters { background: #252526; color: #858585; border-right: 1px solid #333; }
 :root[data-theme="dark"] .cm-activeLine, :root[data-theme="dark"] .cm-activeLineGutter { background: #ffffff10; }
 :root[data-theme="dark"] .cm-cursor { border-left-color: #d4d4d4; }
+/* The editor never enables CodeMirror's own dark mode, so its light-theme selection colour (pale lavender) would sit behind
+   the light text. !important beats CodeMirror's longer focused/unfocused selector chains. */
+:root[data-theme="dark"] .cm-selectionBackground { background: #3a3d41 !important; }
+:root[data-theme="dark"] .cm-focused .cm-selectionBackground { background: #264f78 !important; }
+:root[data-theme="dark"] .cm-content ::selection { background: #264f78; }
 .cm-ws-space { background: radial-gradient(circle, #8888 1px, transparent 1.5px) center / 1ch 100% no-repeat; }
 .cm-ws-tab { background: linear-gradient(#8886, #8886) left center / 100% 1px no-repeat; }
 dialog.settings { border: 1px solid #8886; border-radius: 8px; padding: 16px 20px; min-width: 360px; }
