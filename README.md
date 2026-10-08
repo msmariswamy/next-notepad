@@ -48,7 +48,8 @@ Get the latest installer from the [Releases](../../releases) page (every push to
 | Platform | File |
 |---|---|
 | macOS (Apple Silicon and Intel) | `next-notepad_<version>_universal.dmg` |
-| Windows | `next-notepad_<version>_x64-setup.exe` |
+| Windows (x64) | `next-notepad_<version>_x64-setup.exe` |
+| Windows on ARM | `next-notepad_<version>_arm64-setup.exe` |
 
 Builds are not notarized yet, so the first launch needs one extra step. On macOS, drag the app to Applications, try to open
 it, then go to **System Settings > Privacy & Security** and click **Open Anyway** (on older macOS, right-click the app and

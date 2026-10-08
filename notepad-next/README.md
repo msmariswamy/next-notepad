@@ -165,7 +165,7 @@ The script updates `tauri.conf.json`, `package.json`, `package-lock.json`, `Carg
 commit `Release vX.Y.Z` and the tag `vX.Y.Z`, and refuses to run on a dirty working tree, off `main`, or if the tag exists.
 Without `--push`, finish with `git push origin main && git push origin vX.Y.Z`.
 
-Pushing the tag builds a universal macOS `.dmg` (Apple Silicon and Intel) and a Windows `.exe`, runs the unit tests first,
+Pushing the tag builds a universal macOS `.dmg` (Apple Silicon and Intel) and Windows `.exe` installers for x64 and ARM64, runs the unit tests first,
 and publishes both on the repository's **Releases** page automatically, with generated release notes. You can also run the workflow
 by hand from the Actions tab and type the tag.
 
