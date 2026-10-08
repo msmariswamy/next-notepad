@@ -14,4 +14,10 @@ export interface Platform {
   /** Generic OK / Cancel question. */
   confirm(message: string, okLabel: string): Promise<boolean>;
   clipboard: ClipboardApi;
+  /**
+   * Files dragged from the operating system onto the window, as absolute paths in drop order (spec: window-file-drop).
+   * Optional: only the desktop app can receive them, so test fakes and the browser harness may leave it out.
+   * Resolves to the function that stops listening.
+   */
+  onFilesDropped?(handler: (paths: string[]) => void): Promise<() => void>;
 }

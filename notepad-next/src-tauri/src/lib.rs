@@ -11,6 +11,9 @@ mod regex_compat;
 mod session;
 mod settings;
 
+/// Files the OS opens with the app before `setup` has run (macOS can deliver the open event that early on a cold launch).
+static EARLY_OPENS: cli_server::EarlyOpens = cli_server::EarlyOpens::new();
+
 /// Liveness check used by the IPC client smoke test.
 #[tauri::command]
 fn ping() -> String {
@@ -45,7 +48,12 @@ pub fn run() {
                     None
                 }
             };
-            app.manage(cli_app::CliState { server, queue });
+            app.manage(cli_app::CliState { server, queue: queue.clone() });
+            // Files macOS handed over before this point (a cold launch from Finder) were held; deliver them now.
+            use cli_server::Sink;
+            for files in EARLY_OPENS.go_live() {
+                queue.open(0, files, false);
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -88,10 +96,13 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             tauri::RunEvent::Opened { urls } => {
                 use cli_server::Sink;
-                if let Some(state) = handle.try_state::<cli_app::CliState>() {
-                    let files: Vec<String> = urls.iter().filter_map(|u| u.to_file_path().ok()).map(|p| p.to_string_lossy().into_owned()).collect();
-                    if !files.is_empty() {
-                        state.queue.open(0, files, false);
+                let files: Vec<String> = urls.iter().filter_map(|u| u.to_file_path().ok()).map(|p| p.to_string_lossy().into_owned()).collect();
+                if !files.is_empty() {
+                    // Held if the app is still starting up, delivered through the queue otherwise.
+                    if let Some(files) = EARLY_OPENS.offer(files) {
+                        if let Some(state) = handle.try_state::<cli_app::CliState>() {
+                            state.queue.open(0, files, false);
+                        }
                     }
                 }
             }

@@ -6,6 +6,13 @@ import { createMemoryFilesApi } from "../search/memoryFilesApi";
 import type { Platform } from "./platform";
 import { memoryClipboard } from "./clipboard";
 
+declare global {
+  interface Window {
+    /** Test hook (browser host only): deliver a drop of these absolute paths as the desktop webview would. */
+    __nextNotepadDrop?: (paths: string[]) => void;
+  }
+}
+
 /**
  * Host used when running outside Tauri (Vite dev server, Playwright). Files live
  * in memory and paths come from window.prompt, so UI flows can be exercised in WebKit.
@@ -53,6 +60,14 @@ export function createBrowserHost(): { ipc: Ipc; platform: Platform; filesApi: F
     confirmUnsaved: confirmUnsavedDialog,
     confirm: confirmDialog,
     clipboard: memoryClipboard(),
+    // A file dropped on a plain browser page is not handled (the page has no real paths). Tests act as the desktop
+    // webview through `window.__nextNotepadDrop(paths)`.
+    async onFilesDropped(handler) {
+      window.__nextNotepadDrop = (paths) => handler(paths);
+      return () => {
+        window.__nextNotepadDrop = undefined;
+      };
+    },
   };
   // Test hook: lets e2e tests seed the in-memory file system.
   (window as unknown as { __memoryFiles: Map<string, string> }).__memoryFiles = files;

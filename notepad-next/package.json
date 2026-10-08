@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "release": "node scripts/release.mjs"
+    "release": "node scripts/release.mjs",
+    "check:plist": "node scripts/check-info-plist.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

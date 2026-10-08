@@ -83,6 +83,15 @@ cd src-tauri && cargo test   # Rust backend
   invalid input is never modified and the reason is shown.
 - The caret and scroll position of every tab are stored with the session and restored on launch.
 
+### Opening files from Finder
+
+- Drag one or more files onto the window: each opens as a tab, in drop order, and the last one is active. A file that is
+  already open is just focused, a large file asks first (as File > Open does), and a folder or unreadable item shows a
+  "cannot open" message without stopping the others.
+- The macOS bundle declares an **alternate** handler for any file, so next-notepad appears in Finder's *Open With* list and
+  accepts files dropped on its Dock or app icon. It never becomes the default application for any file type.
+- `npm run check:plist` (macOS) checks the built app's `Info.plist` for exactly that declaration.
+
 ### Command line
 
 ```bash

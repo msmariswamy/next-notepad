@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!--
+    Merged into the app's Info.plist by Tauri's bundler (spec: macos-document-types, ADR-0010).
+
+    One catch-all document type with Alternate rank: Finder lists next-notepad under "Open With" and accepts files dropped
+    on the Dock or app icon, but next-notepad is never the default application for any file type.
+    Do not change LSHandlerRank to Default or Owner, and do not add per-extension entries.
+  -->
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>Any file</string>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+      <key>LSHandlerRank</key>
+      <string>Alternate</string>
+      <key>LSItemContentTypes</key>
+      <array>
+        <string>public.data</string>
+      </array>
+      <key>CFBundleTypeExtensions</key>
+      <array>
+        <string>*</string>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>

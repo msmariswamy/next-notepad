@@ -35,6 +35,8 @@ Close the app and your unsaved tabs come back exactly as you left them.
 - **Command line and `kubectl edit`**: `next-notepad [--wait] file...` opens files in the running app (starting it if needed).
   With `--wait` it stays open until you close the file, so next-notepad works as `KUBE_EDITOR`, `GIT_EDITOR` or `EDITOR`.
   Help > Command Line Tool… installs the command (macOS) and shows the line to paste.
+- **Drag and drop from Finder** (macOS): drop files on the window and each opens as a tab; drop them on the Dock or app icon, or
+  use Finder's Open With, to open them too. next-notepad is offered for any file but never becomes your default application.
 - **Editing basics**: tabs, multiple carets, column selection, folding, syntax highlighting for 16 languages, light and
   dark themes, word wrap, show all characters (spaces, tabs, line endings), encoding and line-ending conversion.
 

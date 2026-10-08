@@ -270,6 +270,33 @@ impl Sink for QueuedSink {
     }
 }
 
+/// Files the operating system hands to the app (macOS "open" events) can arrive before the app has finished setting up,
+/// when there is no queue to put them in yet. This holds them, then lets them through once the app is live.
+pub struct EarlyOpens(Mutex<Option<Vec<Vec<String>>>>);
+
+impl EarlyOpens {
+    pub const fn new() -> Self {
+        EarlyOpens(Mutex::new(Some(Vec::new())))
+    }
+
+    /// Before [`EarlyOpens::go_live`] the files are kept and `None` is returned; afterwards they are handed straight back
+    /// for the caller to deliver.
+    pub fn offer(&self, files: Vec<String>) -> Option<Vec<String>> {
+        match self.0.lock().unwrap().as_mut() {
+            Some(held) => {
+                held.push(files);
+                None
+            }
+            None => Some(files),
+        }
+    }
+
+    /// The app is set up: return everything held so far, in arrival order, and stop holding.
+    pub fn go_live(&self) -> Vec<Vec<String>> {
+        self.0.lock().unwrap().take().unwrap_or_default()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -541,6 +568,27 @@ mod tests {
         assert_eq!(rx.try_recv().unwrap().0, 2);
         queue.open(3, vec!["/c".into()], false);
         assert_eq!(rx.try_recv().unwrap().0, 3, "after ready requests go straight through");
+    }
+
+    #[test]
+    fn early_opens_are_held_until_the_app_is_live_and_keep_their_order() {
+        let early = EarlyOpens::new();
+        assert_eq!(early.offer(vec!["/a".into()]), None);
+        assert_eq!(early.offer(vec!["/b".into(), "/c".into()]), None);
+        assert_eq!(early.go_live(), vec![vec!["/a".to_string()], vec!["/b".to_string(), "/c".to_string()]]);
+    }
+
+    #[test]
+    fn once_live_early_opens_hand_the_files_straight_back() {
+        let early = EarlyOpens::new();
+        early.go_live();
+        assert_eq!(early.offer(vec!["/a".into()]), Some(vec!["/a".to_string()]));
+        assert!(early.go_live().is_empty());
+    }
+
+    #[test]
+    fn going_live_with_nothing_held_is_empty() {
+        assert!(EarlyOpens::new().go_live().is_empty());
     }
 
     #[test]

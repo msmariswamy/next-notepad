@@ -16,4 +16,12 @@ export const tauriPlatform: Platform = {
   confirmUnsaved: confirmUnsavedDialog,
   confirm: confirmDialog,
   clipboard: webClipboard,
+  async onFilesDropped(handler) {
+    // Tauri hides OS file paths from HTML5 drop events; the webview's own drag-drop event is the only source of real
+    // paths. It only yields paths, so reading the files still goes through the `open_file` command (ADR-0002).
+    const { getCurrentWebview } = await import("@tauri-apps/api/webview");
+    return getCurrentWebview().onDragDropEvent((event) => {
+      if (event.payload.type === "drop" && event.payload.paths.length > 0) handler(event.payload.paths);
+    });
+  },
 };

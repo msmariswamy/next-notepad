@@ -23,6 +23,7 @@ import { dispatchShortcut, renderMenuBar } from "./app/menuBar";
 import { createToaster } from "./app/toast";
 import { restoreSession } from "./session/snapshot";
 import { OpenRequestHandler } from "./cli/openRequests";
+import { createFileDropHandler } from "./app/fileDrop";
 import { openCommandLineDialog } from "./cli/commandLineDialog";
 import { browserOpenHost, tauriOpenHost } from "./cli/hosts";
 import { applyDockVisibility, getDock } from "./layout/workspace";
@@ -94,6 +95,10 @@ functionList.schedule();
 documentMap.schedule();
 
 const split = new SplitView({ app, panes: document.getElementById("panes")!, secondParent: document.getElementById("editor2")!, settings });
+
+// Files dragged from Finder (or Explorer) onto the window open as tabs (spec: window-file-drop).
+const stopListeningForDrops = await host.platform.onFilesDropped?.(createFileDropHandler(app));
+window.addEventListener("pagehide", () => stopListeningForDrops?.());
 
 const finder = new FindController(app);
 const filesApi = inTauri ? tauriFilesApi : (host as ReturnType<typeof createBrowserHost>).filesApi;
