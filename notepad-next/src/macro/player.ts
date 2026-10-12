@@ -122,7 +122,8 @@ export class MacroPlayer {
       finder.state = JSON.parse(JSON.stringify(state));
       try {
         if (step.id === "find.findNext") {
-          if (!finder.findNext()) throw new StepFailure("No match found");
+          const outcome = finder.findNext();
+          if (outcome === "boundary" || outcome === "none") throw new StepFailure("No match found");
         } else if (step.id === "find.replace") {
           finder.replace();
         } else {

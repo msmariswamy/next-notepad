@@ -15,12 +15,14 @@ let commands: Command[];
 let openFind: ReturnType<typeof vi.fn<(tab: string) => void>>;
 let notify: ReturnType<typeof vi.fn<(m: string, k: "info" | "error") => void>>;
 let settingsIpc: ReturnType<typeof createMockIpc>;
+let settingsStore: SettingsStore;
 const cmd = (id: string) => commands.find((c) => c.id === id)!;
 
 beforeEach(async () => {
   document.body.innerHTML = '<nav id="menubar"></nav><div id="tabs"></div><div id="editor"></div><div id="status"></div>';
   settingsIpc = createMockIpc({ get_settings: () => ({ ...DEFAULT_SETTINGS }), update_settings: (a) => a?.settings });
   const settings = new SettingsStore(settingsIpc);
+  settingsStore = settings;
   await settings.load();
   notify = vi.fn();
   app = new App({
@@ -457,5 +459,61 @@ describe("XML, YAML and Convert menus", () => {
     expect(app.manager.get(jsonId)!.text).toBe('{"a": 1}');
     expect(app.view.state.doc.toString()).toBe("a: 1");
     expect(app.manager.active!.language).toBe("YAML");
+  });
+});
+
+describe("Find Next / Previous shortcuts report the outcome", () => {
+  const setDoc = (text: string, caret: number) => {
+    app.view.dispatch({ changes: { from: 0, to: app.view.state.doc.length, insert: text }, selection: { anchor: caret } });
+  };
+  const finder = () => new FindController(app);
+  const withFinder = (f: FindController) => {
+    commands = createCommands({ app, finder: f, settings: settingsStore, openFind, openSettings: vi.fn() });
+  };
+
+  it("toasts when the search wraps forward", () => {
+    const f = finder();
+    f.state.pattern = "a";
+    withFinder(f);
+    setDoc("a b a", 5);
+    cmd("search.findNext").run();
+    expect(notify).toHaveBeenCalledWith("Reached end of document, continuing from top", "info");
+  });
+
+  it("toasts when the search wraps backward", () => {
+    const f = finder();
+    f.state.pattern = "a";
+    withFinder(f);
+    setDoc("a b a", 0);
+    cmd("search.findPrev").run();
+    expect(notify).toHaveBeenCalledWith("Reached start of document, continuing from bottom", "info");
+  });
+
+  it("toasts 'No more results' at the edge when wrap is off", () => {
+    const f = finder();
+    f.state.pattern = "a";
+    f.state.wrap = false;
+    withFinder(f);
+    setDoc("a b a", 5);
+    cmd("search.findNext").run();
+    expect(notify).toHaveBeenCalledWith("No more results", "info");
+  });
+
+  it("toasts 'No results found' when nothing matches", () => {
+    const f = finder();
+    f.state.pattern = "zzz";
+    withFinder(f);
+    setDoc("a b a", 0);
+    cmd("search.findNext").run();
+    expect(notify).toHaveBeenCalledWith("No results found", "info");
+  });
+
+  it("stays silent when a match is simply found", () => {
+    const f = finder();
+    f.state.pattern = "a";
+    withFinder(f);
+    setDoc("a b a", 0);
+    cmd("search.findNext").run();
+    expect(notify).not.toHaveBeenCalled();
   });
 });

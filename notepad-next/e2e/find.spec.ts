@@ -30,16 +30,55 @@ test("Cmd+H opens on the Replace tab and prefills the selection", async ({ page 
   await expect(dialog(page).locator('[name="findWhat"]')).toHaveValue("needle");
 });
 
-test("Find Next selects matches one after another", async ({ page }) => {
+test("Find Next selects matches one after another and reports the end without wrap", async ({ page }) => {
+  await typeInEditor(page, "a b a");
+  await page.keyboard.press("Meta+ArrowUp");
+  await page.keyboard.press("Meta+f");
+  await dialog(page).locator('[name="findWhat"]').fill("a");
+  await dialog(page).locator('[name="wrap"]').uncheck();
+  await dialog(page).getByRole("button", { name: "Find Next" }).first().click();
+  await expect(page.getByTestId("statusbar")).toContainText("Sel: 1");
+  await dialog(page).getByRole("button", { name: "Find Next" }).first().click();
+  await dialog(page).getByRole("button", { name: "Find Next" }).first().click();
+  await expect(message(page)).toHaveText("No more results");
+});
+
+test("Wrap around is on by default and Find Next says it continued from the top", async ({ page }) => {
+  await typeInEditor(page, "a b a");
+  await page.keyboard.press("Meta+ArrowUp");
+  await page.keyboard.press("Meta+f");
+  await expect(dialog(page).locator('[name="wrap"]')).toBeChecked();
+  await dialog(page).locator('[name="findWhat"]').fill("a");
+  const next = dialog(page).getByRole("button", { name: "Find Next" }).first();
+  await next.click();
+  await next.click();
+  await next.click();
+  await expect(message(page)).toHaveText("Reached end of document, continuing from top");
+  await expect(page.getByTestId("statusbar")).toContainText("Sel: 1");
+  await next.click();
+  await expect(message(page)).toHaveText("");
+});
+
+test("Find Next says when the text is nowhere in the document", async ({ page }) => {
+  await typeInEditor(page, "a b a");
+  await page.keyboard.press("Meta+f");
+  await dialog(page).locator('[name="findWhat"]').fill("zebra");
+  await dialog(page).getByRole("button", { name: "Find Next" }).first().click();
+  await expect(message(page)).toHaveText("No results found");
+});
+
+test("The Find Next shortcut toasts the wrap with the dialog closed", async ({ page }) => {
   await typeInEditor(page, "a b a");
   await page.keyboard.press("Meta+ArrowUp");
   await page.keyboard.press("Meta+f");
   await dialog(page).locator('[name="findWhat"]').fill("a");
   await dialog(page).getByRole("button", { name: "Find Next" }).first().click();
-  await expect(page.getByTestId("statusbar")).toContainText("Sel: 1");
   await dialog(page).getByRole("button", { name: "Find Next" }).first().click();
-  await dialog(page).getByRole("button", { name: "Find Next" }).first().click();
-  await expect(message(page)).toHaveText("Can't find the text");
+  await page.keyboard.press("Escape");
+  await expect(dialog(page)).toBeHidden();
+  await page.locator(".cm-content").click();
+  await page.keyboard.press("Meta+g");
+  await expect(page.locator("#toast")).toHaveText("Reached end of document, continuing from top");
 });
 
 test("Count reports the number of matches", async ({ page }) => {

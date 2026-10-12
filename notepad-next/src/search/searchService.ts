@@ -50,22 +50,28 @@ export interface FindOptions {
   range?: Range;
 }
 
+/** A match was found (`wrapped` when the search passed the document edge to get there), or why there is none. */
+export type FindResult = { range: Range; wrapped: boolean } | { range: null; reason: "boundary" | "none" };
+
 /**
  * Next match relative to the current selection. Forward searches start at the
  * selection end, backward searches at its start. A zero-length match sitting
  * on the caret is skipped so repeated Find Next always makes progress.
+ * `boundary` means matches exist but none lie beyond the caret and wrap is off.
  */
-export function findNext(text: string, q: Query, sel: Range, o: FindOptions): Range | null {
+export function findNext(text: string, q: Query, sel: Range, o: FindOptions): FindResult {
   const hits = collect(text, q, o.range);
-  if (hits.length === 0) return null;
+  if (hits.length === 0) return { range: null, reason: "none" };
   const caretOnly = sel.from === sel.to;
-  const pick = (h: Hit | undefined): Range | null => (h ? { from: h.from, to: h.to } : null);
+  const found = (h: Hit, wrapped: boolean): FindResult => ({ range: { from: h.from, to: h.to }, wrapped });
   if (!o.backward) {
     const after = hits.find((h) => h.from >= sel.to && !(caretOnly && h.from === h.to && h.from === sel.from));
-    return pick(after ?? (o.wrap ? hits[0] : undefined));
+    if (after) return found(after, false);
+    return o.wrap ? found(hits[0], true) : { range: null, reason: "boundary" };
   }
   const before = [...hits].reverse().find((h) => h.to <= sel.from && !(caretOnly && h.from === h.to && h.to === sel.from));
-  return pick(before ?? (o.wrap ? hits[hits.length - 1] : undefined));
+  if (before) return found(before, false);
+  return o.wrap ? found(hits[hits.length - 1], true) : { range: null, reason: "boundary" };
 }
 
 /** All replacements as one change set, so applying it is a single undo step. */

@@ -4,6 +4,7 @@ import type { Query, Range } from "./searchService";
 import { countMatches, findAll, findNext, planReplaceAll, planReplaceCurrent } from "./searchService";
 import { addBookmarks, addMarks, clearBookmarks, clearMarks, neighbourBookmark, toggleBookmark } from "../editor/marks";
 import { DEFAULT_PATTERN_OPTIONS, type PatternOptions } from "./regexCompat";
+import type { FindOutcome } from "./findMessage";
 
 export interface FindState {
   pattern: string;
@@ -19,7 +20,7 @@ export const DEFAULT_FIND_STATE: FindState = {
   replacement: "",
   opts: { ...DEFAULT_PATTERN_OPTIONS },
   backward: false,
-  wrap: false,
+  wrap: true,
   inSelection: false,
 };
 
@@ -65,20 +66,21 @@ export class FindController {
     return this.app.view.state.doc.toString();
   }
 
-  /** Select the next match; returns false when there is none. */
-  findNext(direction?: { backward: boolean }): boolean {
+  /** Select the next match and report whether it wrapped, hit the document edge, or found nothing. */
+  findNext(direction?: { backward: boolean }): FindOutcome {
     this.onAction?.("findNext", { ...this.state, backward: direction?.backward ?? this.state.backward });
     return this.findNextCore(direction);
   }
 
-  private findNextCore(direction?: { backward: boolean }): boolean {
-    const hit = findNext(this.activeText(), this.query(), this.app.getSelection(), {
+  private findNextCore(direction?: { backward: boolean }): FindOutcome {
+    const result = findNext(this.activeText(), this.query(), this.app.getSelection(), {
       backward: direction?.backward ?? this.state.backward,
       wrap: this.state.wrap,
       range: this.range(),
     });
-    if (hit) this.app.setSelection(hit);
-    return hit !== null;
+    if (!result.range) return result.reason;
+    this.app.setSelection(result.range);
+    return result.wrapped ? "wrapped" : "found";
   }
 
   count(): number {
@@ -113,8 +115,8 @@ export class FindController {
     };
   }
 
-  /** Replace the selected match if there is one, then move to the next match. */
-  replace(): boolean {
+  /** Replace the selected match if there is one, then move to the next match and report how that search went. */
+  replace(): FindOutcome {
     this.onAction?.("replace", this.state);
     const plan = planReplaceCurrent(this.activeText(), this.query(), this.app.getSelection());
     if (plan) {

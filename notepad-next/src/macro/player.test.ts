@@ -184,6 +184,20 @@ describe("MacroPlayer find steps", () => {
     expect(app.view.state.sliceDoc(app.getSelection().from, app.getSelection().to)).toBe("two");
   });
 
+  it("a Find that wraps past the end still succeeds", async () => {
+    setDoc("one two three", 13);
+    const r = await player.play(macro(cmd("find.findNext", findState("one", "", { wrap: true }))));
+    expect(r.ok).toBe(true);
+    expect(app.view.state.sliceDoc(app.getSelection().from, app.getSelection().to)).toBe("one");
+  });
+
+  it("a Find stopped at the document edge with wrap off still fails the step", async () => {
+    setDoc("one two three", 13);
+    const r = await player.play(macro(cmd("find.findNext", findState("one", "", { wrap: false }))));
+    expect(r.ok).toBe(false);
+    expect(r.failure!.reason).toMatch(/no match/i);
+  });
+
   it("a Find with no match stops the playback and names the step", async () => {
     setDoc("one", 0);
     const r = await player.play(macro(text("-"), cmd("find.findNext", findState("zzz")), text("+")));
