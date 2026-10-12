@@ -37,11 +37,13 @@ describe("Find Next", () => {
   it("selects successive matches", () => {
     setText("a b a");
     find.state.pattern = "a";
-    expect(find.findNext()).toBe(true);
+    find.state.wrap = false;
+    expect(find.findNext()).toBe("found");
     expect(app.getSelection()).toEqual({ from: 0, to: 1 });
-    expect(find.findNext()).toBe(true);
+    expect(find.findNext()).toBe("found");
     expect(app.getSelection()).toEqual({ from: 4, to: 5 });
-    expect(find.findNext()).toBe(false);
+    expect(find.findNext()).toBe("boundary");
+    expect(app.getSelection()).toEqual({ from: 4, to: 5 });
   });
 
   it("wraps around when enabled", () => {
@@ -50,8 +52,20 @@ describe("Find Next", () => {
     find.state.wrap = true;
     find.findNext();
     find.findNext();
-    expect(find.findNext()).toBe(true);
+    expect(find.findNext()).toBe("wrapped");
     expect(app.getSelection().from).toBe(0);
+  });
+
+  it("has Wrap around on for a new controller", () => {
+    expect(new FindController(app).state.wrap).toBe(true);
+  });
+
+  it("reports no match at all and leaves the selection alone", () => {
+    setText("a b a");
+    app.setSelection({ from: 2, to: 3 });
+    find.state.pattern = "zzz";
+    expect(find.findNext()).toBe("none");
+    expect(app.getSelection()).toEqual({ from: 2, to: 3 });
   });
 
   it("searches backward from the caret", () => {
@@ -124,8 +138,19 @@ describe("Replace", () => {
     find.state.pattern = "x";
     find.state.replacement = "zz";
     find.findNext(); // selects first x
-    expect(find.replace()).toBe(true);
+    expect(find.replace()).toBe("found");
     expect(text()).toBe("zz y x");
+    expect(selected()).toBe("x");
+  });
+
+  it("reports a wrap when the follow-up search passes the end", () => {
+    setText("x y x");
+    find.state.pattern = "x";
+    find.state.replacement = "z";
+    find.state.wrap = true;
+    app.setSelection({ from: 4, to: 5 });
+    expect(find.replace()).toBe("wrapped");
+    expect(text()).toBe("x y z");
     expect(selected()).toBe("x");
   });
 

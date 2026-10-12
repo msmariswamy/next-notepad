@@ -1,6 +1,7 @@
 import type { SearchMode } from "./regexCompat";
 import type { FindController, SearchOutcome } from "./findController";
 import { SearchHistory } from "./history";
+import { findMessage } from "./findMessage";
 import type { FilesOutcome, FilesSearchController, Where } from "./filesSearch";
 import { dialogOpacity, type TransparencySettings } from "./transparency";
 
@@ -162,7 +163,8 @@ function buildDialog(deps: FindDialogDeps, initialTab: FindTab): FindDialogHandl
     if (st.pattern === "") return say("Enter text to find.", true);
     try {
       const msg = fn();
-      if (msg) say(msg);
+      // An empty string clears a stale message (e.g. "No more results" after a successful Find Next).
+      if (typeof msg === "string") say(msg);
     } catch (e) {
       if (e instanceof SyntaxError) say(`Invalid regular expression: ${e.message}`, true);
       else throw e;
@@ -174,7 +176,7 @@ function buildDialog(deps: FindDialogDeps, initialTab: FindTab): FindDialogHandl
     return b;
   };
 
-  const findNextBtn = btn("Find Next", run(() => (controller.findNext() ? "" : "Can't find the text")), "find-next");
+  const findNextBtn = btn("Find Next", run(() => findMessage(controller.findNext(), st.backward)), "find-next");
   const countBtn = btn("Count", run(() => `Count: ${controller.count()} match${controller.count() === 1 ? "" : "es"}`));
   const findAllCurrent = btn("Find All in Current Document", run(() => {
     const out = controller.findAllInCurrent();
@@ -186,7 +188,7 @@ function buildDialog(deps: FindDialogDeps, initialTab: FindTab): FindDialogHandl
     deps.showResults(out);
     return out.summary;
   }));
-  const replaceBtn = btn("Replace", run(() => (controller.replace() ? "" : "Can't find the text")));
+  const replaceBtn = btn("Replace", run(() => findMessage(controller.replace(), st.backward)));
   const replaceAllBtn = btn("Replace All", run(() => {
     const n = controller.replaceAll();
     return `Replace All: ${n} occurrence${n === 1 ? "" : "s"} replaced`;
@@ -200,7 +202,7 @@ function buildDialog(deps: FindDialogDeps, initialTab: FindTab): FindDialogHandl
   const findButtons = el("div", { className: "find-buttons only-find" });
   findButtons.append(findNextBtn, countBtn, findAllCurrent, findAllOpened);
   const replaceButtons = el("div", { className: "find-buttons only-replace" });
-  const replaceFindNext = btn("Find Next", run(() => (controller.findNext() ? "" : "Can't find the text")), "find-next");
+  const replaceFindNext = btn("Find Next", run(() => findMessage(controller.findNext(), st.backward)), "find-next");
   replaceButtons.append(replaceFindNext, replaceBtn, replaceAllBtn, replaceAllOpenedBtn);
 
   // ---- Mark tab

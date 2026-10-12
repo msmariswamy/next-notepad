@@ -10,6 +10,7 @@ import { runJsonCommand } from "../json/jsonCommands";
 import { runFormatDocument } from "../format/formatCommand";
 import { openAboutDialog } from "./about";
 import type { FindController } from "../search/findController";
+import { findMessage } from "../search/findMessage";
 import type { FindTab } from "../search/findDialog";
 import type { SettingsStore } from "../settings/store";
 import type { SplitView } from "../split/splitView";
@@ -89,6 +90,11 @@ export function createCommands(ctx: CommandContext): Command[] {
       app.notify(`Clipboard unavailable: ${e}`, "error");
     }
   };
+  /** Shortcut searches have no dialog status line, so say what happened (wrapped, edge, no match) as a toast. */
+  const tellOutcome = (outcome: Parameters<typeof findMessage>[0], backward: boolean) => {
+    const message = findMessage(outcome, backward);
+    if (message) app.notify(message, "info");
+  };
   const selectedText = () => app.view.state.sliceDoc(app.getSelection().from, app.getSelection().to);
   const doc = () => app.manager.active;
   const activeId = () => app.manager.activeId;
@@ -133,8 +139,8 @@ export function createCommands(ctx: CommandContext): Command[] {
     { id: "search.findInFiles", label: "Find in Files…", accelerator: "Mod+Shift+F", run: () => ctx.openFind("files") },
     { id: "search.findInProjects", label: "Find in Projects…", run: () => ctx.openFind("projects") },
     { id: "search.mark", label: "Mark…", run: () => ctx.openFind("mark") },
-    { id: "search.findNext", label: "Find Next", accelerator: "Mod+G", run: () => quietly(() => finder.findNext({ backward: false })) },
-    { id: "search.findPrev", label: "Find Previous", accelerator: "Mod+Shift+G", run: () => quietly(() => finder.findNext({ backward: true })) },
+    { id: "search.findNext", label: "Find Next", accelerator: "Mod+G", run: () => quietly(() => tellOutcome(finder.findNext({ backward: false }), false)) },
+    { id: "search.findPrev", label: "Find Previous", accelerator: "Mod+Shift+G", run: () => quietly(() => tellOutcome(finder.findNext({ backward: true }), true)) },
     { id: "bookmark.toggle", label: "Toggle Bookmark", accelerator: "Mod+F2", run: () => finder.toggleBookmarkAtCaret() },
     { id: "bookmark.next", label: "Next Bookmark", accelerator: "F2", run: () => void finder.gotoBookmark(false) },
     { id: "bookmark.prev", label: "Previous Bookmark", accelerator: "Shift+F2", run: () => void finder.gotoBookmark(true) },

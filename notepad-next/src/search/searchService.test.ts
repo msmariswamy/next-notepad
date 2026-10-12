@@ -48,51 +48,55 @@ describe("findAll / count", () => {
 
 describe("findNext", () => {
   const text = "a b a";
+  const fwd = { backward: false, wrap: false };
+  const hit = (from: number, to: number, wrapped = false) => ({ range: { from, to }, wrapped });
 
   it("finds the next match at or after the caret", () => {
-    expect(findNext(text, q("a"), sel(0), { backward: false, wrap: false })).toEqual({ from: 0, to: 1 });
+    expect(findNext(text, q("a"), sel(0), fwd)).toEqual(hit(0, 1));
   });
 
   it("continues after the current selection", () => {
-    expect(findNext(text, q("a"), sel(0, 1), { backward: false, wrap: false })).toEqual({ from: 4, to: 5 });
+    expect(findNext(text, q("a"), sel(0, 1), fwd)).toEqual(hit(4, 5));
   });
 
-  it("returns null past the last match when wrap is off", () => {
-    expect(findNext(text, q("a"), sel(4, 5), { backward: false, wrap: false })).toBeNull();
+  it("reports the boundary past the last match when wrap is off", () => {
+    expect(findNext(text, q("a"), sel(4, 5), fwd)).toEqual({ range: null, reason: "boundary" });
   });
 
   it("wraps to the first match when wrap is on", () => {
-    expect(findNext(text, q("a"), sel(4, 5), { backward: false, wrap: true })).toEqual({ from: 0, to: 1 });
+    expect(findNext(text, q("a"), sel(4, 5), { backward: false, wrap: true })).toEqual(hit(0, 1, true));
   });
 
   it("searches backward from the selection start", () => {
-    expect(findNext(text, q("a"), sel(4, 5), { backward: true, wrap: false })).toEqual({ from: 0, to: 1 });
+    expect(findNext(text, q("a"), sel(4, 5), { backward: true, wrap: false })).toEqual(hit(0, 1));
   });
 
   it("wraps backward to the last match", () => {
-    expect(findNext(text, q("a"), sel(0), { backward: true, wrap: true })).toEqual({ from: 4, to: 5 });
+    expect(findNext(text, q("a"), sel(0), { backward: true, wrap: true })).toEqual(hit(4, 5, true));
   });
 
-  it("returns null backward from the start when wrap is off", () => {
-    expect(findNext(text, q("a"), sel(0), { backward: true, wrap: false })).toBeNull();
+  it("reports the boundary backward from the start when wrap is off", () => {
+    expect(findNext(text, q("a"), sel(0), { backward: true, wrap: false })).toEqual({ range: null, reason: "boundary" });
   });
 
-  it("returns null when there is no match at all", () => {
-    expect(findNext(text, q("zzz"), sel(0), { backward: false, wrap: true })).toBeNull();
+  it("reports no match at all, with or without wrap", () => {
+    expect(findNext(text, q("zzz"), sel(0), { backward: false, wrap: true })).toEqual({ range: null, reason: "none" });
+    expect(findNext(text, q("zzz"), sel(0), fwd)).toEqual({ range: null, reason: "none" });
+    expect(findNext(text, q("zzz"), sel(0), { backward: true, wrap: false })).toEqual({ range: null, reason: "none" });
   });
 
   it("does not get stuck on a zero-length match at the caret", () => {
     const t = "a\nb";
-    const first = findNext(t, q("^", { mode: "regex" }), sel(0), { backward: false, wrap: false });
-    expect(first).toEqual({ from: 2, to: 2 });
+    const first = findNext(t, q("^", { mode: "regex" }), sel(0), fwd);
+    expect(first).toEqual(hit(2, 2));
   });
 
   it("limits the search to the selection when a range is given", () => {
-    expect(findNext("a a a", q("a"), sel(0), { backward: false, wrap: false, range: sel(2, 5) })).toEqual({ from: 2, to: 3 });
+    expect(findNext("a a a", q("a"), sel(0), { ...fwd, range: sel(2, 5) })).toEqual(hit(2, 3));
   });
 
   it("respects whole word", () => {
-    expect(findNext("cat concat cat", q("cat", { wholeWord: true }), sel(1), { backward: false, wrap: false })).toEqual({ from: 11, to: 14 });
+    expect(findNext("cat concat cat", q("cat", { wholeWord: true }), sel(1), fwd)).toEqual(hit(11, 14));
   });
 });
 
