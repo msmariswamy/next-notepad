@@ -44,6 +44,11 @@ export function renderTabBar(el: HTMLElement, mgr: DocumentManager, h: TabBarHan
     el.append(tab);
   });
 
+  // The strip is rebuilt on every render, which resets its scroll; keep the active tab visible
+  // so files opened externally (kubectl edit, search, Finder) don't hide off-screen.
+  const active = el.querySelector<HTMLElement>(".tab.active");
+  active?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+
   const add = document.createElement("button");
   add.className = "tab-new";
   add.setAttribute("aria-label", "New tab");
